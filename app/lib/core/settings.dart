@@ -74,8 +74,25 @@ class Settings extends ChangeNotifier {
   /// Vibração nos alertas.
   bool alertVibrate = true;
 
-  /// Tocar em "responder" (↩) já habilita o TX (como o duplo clique do WSJT-X/JTDX).
+  /// Faixa de aviso (pop-up) no topo da tela. Desligue para operar sem os avisos visuais em faixa.
+  bool alertBanner = true;
+
+  /// Borda da tela que pisca a cada alerta.
+  bool alertFlash = true;
+
+  /// **Auto TX**: tocar em "responder" (↩) já arma a transmissão (como o duplo clique do WSJT-X/JTDX).
+  /// Desligado, o ↩ só seleciona a estação e o TX é armado manualmente em "Ativar TX".
+  /// (Chave persistida mantida como `replyEnablesTx` por compatibilidade.)
   bool replyEnablesTx = true;
+
+  /// Número máximo de transmissões repetidas da mesma etapa sem resposta antes de desarmar o TX.
+  int txMaxAttempts = 12;
+
+  /// Reproduz o áudio recebido do rádio no alto-falante do celular (para ouvir o "assobio" dos modos digitais).
+  bool monitorSpeaker = false;
+
+  /// Volume do monitor de áudio (0..1), aplicado sobre o volume de mídia do celular.
+  double monitorVolume = 0.8;
 
   /// O tutorial de boas-vindas já foi exibido.
   bool tutorialSeen = false;
@@ -102,6 +119,11 @@ class Settings extends ChangeNotifier {
     alertSound = p.getBool('alertSound') ?? alertSound;
     alertVibrate = p.getBool('alertVibrate') ?? alertVibrate;
     replyEnablesTx = p.getBool('replyEnablesTx') ?? replyEnablesTx;
+    alertBanner = p.getBool('alertBanner') ?? alertBanner;
+    alertFlash = p.getBool('alertFlash') ?? alertFlash;
+    txMaxAttempts = p.getInt('txMaxAttempts') ?? txMaxAttempts;
+    monitorSpeaker = p.getBool('monitorSpeaker') ?? monitorSpeaker;
+    monitorVolume = p.getDouble('monitorVolume') ?? monitorVolume;
     tutorialSeen = p.getBool('tutorialSeen') ?? tutorialSeen;
     txBufferMs = p.getInt('txBufferMs') ?? txBufferMs;
     txAdvanceMs = p.getInt('txAdvanceMs') ?? txAdvanceMs;
@@ -137,6 +159,11 @@ class Settings extends ChangeNotifier {
     await p.setBool('alertSound', alertSound);
     await p.setBool('alertVibrate', alertVibrate);
     await p.setBool('replyEnablesTx', replyEnablesTx);
+    await p.setBool('alertBanner', alertBanner);
+    await p.setBool('alertFlash', alertFlash);
+    await p.setInt('txMaxAttempts', txMaxAttempts);
+    await p.setBool('monitorSpeaker', monitorSpeaker);
+    await p.setDouble('monitorVolume', monitorVolume);
     await p.setBool('tutorialSeen', tutorialSeen);
     await p.setInt('txBufferMs', txBufferMs);
     await p.setInt('txAdvanceMs', txAdvanceMs);

@@ -139,6 +139,12 @@ class AlertCenter extends ChangeNotifier {
   /// Habilita a vibração (configuração do usuário).
   bool vibrateEnabled = true;
 
+  /// Mostra a faixa (pop-up) no topo da tela. Desligado, o alerta ainda pode tocar/vibrar/piscar.
+  bool bannerEnabled = true;
+
+  /// Pisca a borda da tela a cada alerta.
+  bool flashEnabled = true;
+
   /// Alerta em destaque (ou `null`).
   AppAlert? current;
 
@@ -162,7 +168,7 @@ class AlertCenter extends ChangeNotifier {
     if (history.length > 50) history.removeAt(0);
     if (soundEnabled) _player.play(kind);
     if (vibrateEnabled) _player.vibrate(kind);
-    if (!held) {
+    if (!held && bannerEnabled) {
       current = a;
       _lockedUntil = (kind == AlertKind.reply || kind == AlertKind.qsoComplete) ? now.add(holdImportant) : null;
       _timer?.cancel();

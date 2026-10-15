@@ -167,7 +167,18 @@ class _QsoPanelState extends State<QsoPanel> {
                     const SizedBox(width: 8),
                     SizedBox(width: 92, child: Text(labels[i - 1], style: const TextStyle(fontSize: 11, color: Pal.dim))),
                     Expanded(
-                      child: Text(q.message(i), style: kMono.copyWith(fontSize: 15, fontWeight: FontWeight.w600)),
+                      child: Text(
+                        // sem estação selecionada, mostra o modelo com <DX> no lugar do indicativo
+                        q.dxCall.isEmpty && i != 6 ? '<DX> ${q.message(i)}' : q.message(i),
+                        style: kMono.copyWith(fontSize: 15, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                    // Enviar ESTA etapa no próximo período de TX (reenviar o R-relatório, voltar ao grid...)
+                    IconButton(
+                      tooltip: 'Enviar esta etapa no próximo período',
+                      visualDensity: VisualDensity.compact,
+                      icon: Icon(Icons.send, size: 20, color: q.txIndex == i && e.txEnabled ? Pal.tx : Pal.accent),
+                      onPressed: () => e.sendStep(i),
                     ),
                   ],
                 ),
@@ -204,13 +215,28 @@ class _QsoPanelState extends State<QsoPanel> {
           SwitchListTile(
             dense: true,
             contentPadding: EdgeInsets.zero,
+            title: const Text('Auto TX'),
+            subtitle: const Text('Responder (↩) já arma a transmissão automaticamente', style: TextStyle(fontSize: 11)),
+            value: s.replyEnablesTx,
+            onChanged: e.setAutoTx,
+          ),
+          SwitchListTile(
+            dense: true,
+            contentPadding: EdgeInsets.zero,
             title: const Text('Auto-sequência'),
             subtitle: const Text('Avança Tx1→Tx5 conforme as respostas', style: TextStyle(fontSize: 11)),
             value: s.autoSeq,
-            onChanged: (v) {
-              s.autoSeq = v;
-              s.save();
-            },
+            onChanged: e.setAutoSeq,
+          ),
+          SwitchListTile(
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Travar nesta etapa'),
+            subtitle: const Text(
+                'Repete a mensagem escolhida (use ▶) mesmo que a outra estação responda; destrave para voltar ao automático',
+                style: TextStyle(fontSize: 11)),
+            value: e.qso.lockStep,
+            onChanged: e.setLockStep,
           ),
           SwitchListTile(
             dense: true,

@@ -64,18 +64,8 @@ class StatusHeader extends StatelessWidget {
                       child: _ClockText(engine: engine),
                     ),
                   ),
-                  // Som dos alertas liga/desliga (a vibração fica nas configurações)
-                  IconButton(
-                    visualDensity: VisualDensity.compact,
-                    style: IconButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(36, 36), tapTargetSize: MaterialTapTargetSize.shrinkWrap),
-                    tooltip: engine.settings.alertSound ? 'Som dos alertas: ligado' : 'Som dos alertas: desligado',
-                    onPressed: () {
-                      engine.settings.alertSound = !engine.settings.alertSound;
-                      engine.settings.save();
-                    },
-                    icon: Icon(engine.settings.alertSound ? Icons.volume_up : Icons.volume_off,
-                        size: 22, color: engine.settings.alertSound ? Pal.text : Pal.dim),
-                  ),
+                  // Menu rápido de avisos e áudio (os mesmos ajustes estão em Configurações)
+                  _QuickMenu(engine: engine),
                   IconButton(
                     visualDensity: VisualDensity.compact,
                     style: IconButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(36, 36), tapTargetSize: MaterialTapTargetSize.shrinkWrap),
@@ -489,6 +479,55 @@ class _Bar extends StatelessWidget {
           SizedBox(width: 42, child: Text(text, textAlign: TextAlign.right, style: kMono.copyWith(fontSize: 10, color: Pal.dim))),
         ],
       ),
+    );
+  }
+}
+
+/// Menu rápido (ícone de sino/alto-falante no topo): liga/desliga a faixa de aviso, a borda piscante,
+/// o som e a vibração dos alertas e o monitor de áudio no alto-falante do celular.
+class _QuickMenu extends StatelessWidget {
+  const _QuickMenu({required this.engine});
+  final Engine engine;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = engine.settings;
+    final anyOn = s.alertBanner || s.alertSound || s.alertFlash || s.alertVibrate;
+    CheckedPopupMenuItem<String> item(String id, String text, bool value) =>
+        CheckedPopupMenuItem<String>(value: id, checked: value, child: Text(text));
+    return PopupMenuButton<String>(
+      tooltip: 'Avisos e áudio',
+      color: Pal.panel2,
+      padding: EdgeInsets.zero,
+      style: IconButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(36, 36), tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+      icon: Icon(
+        s.monitorSpeaker ? Icons.hearing : (anyOn ? Icons.notifications_active : Icons.notifications_off),
+        size: 22,
+        color: anyOn || s.monitorSpeaker ? Pal.text : Pal.dim,
+      ),
+      onSelected: (id) {
+        switch (id) {
+          case 'banner':
+            s.alertBanner = !s.alertBanner;
+          case 'flash':
+            s.alertFlash = !s.alertFlash;
+          case 'sound':
+            s.alertSound = !s.alertSound;
+          case 'vibrate':
+            s.alertVibrate = !s.alertVibrate;
+          case 'monitor':
+            s.monitorSpeaker = !s.monitorSpeaker;
+        }
+        s.save(); // notifica o motor (faixa, som, monitor...)
+      },
+      itemBuilder: (_) => [
+        item('banner', 'Aviso (pop-up) no topo', s.alertBanner),
+        item('flash', 'Piscar a borda da tela', s.alertFlash),
+        item('sound', 'Som dos alertas', s.alertSound),
+        item('vibrate', 'Vibração dos alertas', s.alertVibrate),
+        const PopupMenuDivider(),
+        item('monitor', 'Ouvir o áudio do rádio no celular', s.monitorSpeaker),
+      ],
     );
   }
 }

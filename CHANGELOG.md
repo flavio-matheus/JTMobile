@@ -3,13 +3,21 @@
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Versão ainda em **alfa** (0.x).
 
 ## [0.2.0] — em desenvolvimento
+### Adicionado (controles do operador)
+- **Menu de avisos e áudio** no topo (sino) e em Configurações: desliga o **pop-up (faixa) no topo**, a **borda piscante**, o **som** e a **vibração**.
+- **Barra inferior**: botão **CQ** (liga/desliga a chamada geral) e caixas **Auto TX**, **Auto-seq** e **Travar etapa**.
+- **Reenviar etapa específica**: botão ▶ em cada mensagem Tx1…Tx6 (envia no próximo período e rearma as tentativas); *Travar etapa* impede a auto-sequência de mudar a mensagem; tentativas por etapa configuráveis (padrão 12).
+- **Monitor de áudio no alto-falante do celular** (`engine/audio_monitor.dart`, canal nativo `monitor`): ouvir o áudio do rádio, com volume próprio, mudo durante a TX.
+- Guia na tela mais compacto (mais espaço para a waterfall).
+- Testes `controls_test` (60 no total).
+
 ### Adicionado (alertas, guia e simulador)
 - **Alertas visuais e sonoros** (`engine/alerts.dart`, `ui/guidance.dart`): faixa no topo + borda piscando + som sintetizado + vibração ao
   **iniciar TX**, quando uma **estação responde** e ao **concluir o QSO**; canal nativo `br.poinsp.ft_mobile/alert` (AudioTrack + vibração).
 - **Guia na tela** (`CoachBanner`) com o próximo passo e contagem até o TX, tutorial "Seu primeiro QSO" e botão "?".
 - **Responder (↩) arma o TX** (opção `replyEnablesTx`, como o duplo clique do WSJT-X); QSO termina sem 73 duplicado quando a outra estação encerra (`QsoEvent.finished`).
 - **Simulador de ponta a ponta** (`engine/sim_script.dart`): estações respondem a CQ e a chamadas dirigidas (roteiros A e B); duas estações chamam CQ o tempo todo.
-- Documentação `docs/SIMULADOR.md`; testes `sim_qso_test`, `alerts_test`, `alerts_priority_test` (54 no total).
+- Documentação `docs/SIMULADOR.md`; testes `sim_qso_test`, `alerts_test`, `alerts_priority_test` (60 no total).
 ### Corrigido
 - Cabeçalho estourava em telas estreitas (overflow de 42 px).
 

@@ -101,7 +101,7 @@ class AlertFlash extends StatelessWidget {
     return AnimatedBuilder(
       animation: alerts,
       builder: (context, _) {
-        if (alerts.flashTick == 0 || alerts.history.isEmpty) return const SizedBox.shrink();
+        if (!alerts.flashEnabled || alerts.flashTick == 0 || alerts.history.isEmpty) return const SizedBox.shrink();
         final color = _alertColor(alerts.history.last.kind);
         return IgnorePointer(
           child: TweenAnimationBuilder<double>(
@@ -217,7 +217,7 @@ class _CoachBannerState extends State<CoachBanner> {
         icon: Icons.sync_alt,
         color: Pal.tx,
         title: 'QSO com ${q.dxCall}: ${_step(q.txIndex)}',
-        text: 'Próxima TX no $slotName período, em $secs s (tentativa ${e.txAttempts}).$replied',
+        text: 'Próxima TX no $slotName período, em $secs s (tentativa ${e.txAttempts}/${e.settings.txMaxAttempts}).$replied',
         actionLabel: 'Parar',
         action: e.haltTx,
       );
@@ -252,24 +252,24 @@ class _CoachBannerState extends State<CoachBanner> {
       builder: (context, _) {
         final s = _state();
         return Container(
-          margin: const EdgeInsets.fromLTRB(8, 6, 8, 4),
-          padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
+          margin: const EdgeInsets.fromLTRB(8, 3, 8, 2),
+          padding: const EdgeInsets.fromLTRB(10, 4, 6, 4),
           decoration: BoxDecoration(
             color: s.color.withValues(alpha: 0.13),
             border: Border.all(color: s.color.withValues(alpha: 0.7)),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
           ),
           child: Row(
             children: [
-              Icon(s.icon, color: s.color, size: 26),
-              const SizedBox(width: 10),
+              Icon(s.icon, color: s.color, size: 20),
+              const SizedBox(width: 8),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(s.title, style: TextStyle(color: s.color, fontWeight: FontWeight.w800, fontSize: 14)),
-                    Text(s.text, style: const TextStyle(fontSize: 12, color: Pal.text, height: 1.25), maxLines: 3, overflow: TextOverflow.ellipsis),
+                    Text(s.title, style: TextStyle(color: s.color, fontWeight: FontWeight.w800, fontSize: 12.5), maxLines: 1, overflow: TextOverflow.ellipsis),
+                    Text(s.text, style: const TextStyle(fontSize: 10.5, color: Pal.text, height: 1.15), maxLines: 2, overflow: TextOverflow.ellipsis),
                   ],
                 ),
               ),
@@ -279,10 +279,11 @@ class _CoachBannerState extends State<CoachBanner> {
                     backgroundColor: s.color,
                     foregroundColor: Colors.black,
                     visualDensity: VisualDensity.compact,
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    minimumSize: const Size(0, 30),
                   ),
                   onPressed: s.action,
-                  child: Text(s.actionLabel!, style: const TextStyle(fontWeight: FontWeight.w800)),
+                  child: Text(s.actionLabel!, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
                 ),
             ],
           ),

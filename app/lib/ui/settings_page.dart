@@ -177,22 +177,79 @@ class _SettingsPageState extends State<SettingsPage> {
               subtitle: const Text('Bip ao transmitir, acorde quando uma estação responde, arpejo ao completar o QSO. Usa o volume de MÍDIA.',
                   style: TextStyle(fontSize: 11)),
               value: s.alertSound,
-              onChanged: (v) => setState(() => s.alertSound = v),
+              onChanged: (v) {
+                setState(() => s.alertSound = v);
+                s.save();
+              },
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: const Text('Vibração nos alertas'),
               value: s.alertVibrate,
-              onChanged: (v) => setState(() => s.alertVibrate = v),
+              onChanged: (v) {
+                setState(() => s.alertVibrate = v);
+                s.save();
+              },
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Responder (↩) já arma o TX'),
-              subtitle: const Text('Como o duplo clique do WSJT-X/JTDX: o app já começa a chamar no próximo período',
+              title: const Text('Aviso (pop-up) no topo da tela'),
+              subtitle: const Text('Desligue para não ver as faixas de aviso; o guia e os sons continuam conforme as opções',
+                  style: TextStyle(fontSize: 11)),
+              value: s.alertBanner,
+              onChanged: (v) {
+                setState(() => s.alertBanner = v);
+                s.save();
+              },
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Piscar a borda da tela'),
+              value: s.alertFlash,
+              onChanged: (v) {
+                setState(() => s.alertFlash = v);
+                s.save();
+              },
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Auto TX'),
+              subtitle: const Text('Responder (↩) já arma a transmissão, como o duplo clique do WSJT-X/JTDX',
                   style: TextStyle(fontSize: 11)),
               value: s.replyEnablesTx,
               onChanged: (v) => setState(() => s.replyEnablesTx = v),
             ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Auto-sequência do QSO'),
+              subtitle: const Text('Avança Tx1 → Tx5 sozinho conforme as respostas recebidas', style: TextStyle(fontSize: 11)),
+              value: s.autoSeq,
+              onChanged: (v) => setState(() => s.autoSeq = v),
+            ),
+            _slider('Tentativas por etapa sem resposta', s.txMaxAttempts.toDouble(), 3, 30,
+                (v) => setState(() => s.txMaxAttempts = v.round()), '${s.txMaxAttempts}'),
+            const Text(
+              'Depois deste número de repetições da mesma mensagem, o TX é desarmado. Use ▶ em Meu QSO / TX para reenviar uma etapa.',
+              style: TextStyle(color: Pal.dim, fontSize: 11),
+            ),
+            _section('Áudio do rádio no celular'),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Ouvir o áudio do rádio no alto-falante'),
+              subtitle: const Text('Reproduz o "assobio" dos modos digitais. Usa o volume de MÍDIA; desligado durante a TX. '
+                  'Cuidado com realimentação se o celular ficar perto do microfone do rádio.',
+                  style: TextStyle(fontSize: 11)),
+              value: s.monitorSpeaker,
+              onChanged: (v) {
+                setState(() => s.monitorSpeaker = v);
+                s.save();
+              },
+            ),
+            _slider('Volume do monitor', s.monitorVolume, 0, 1, (v) {
+              setState(() => s.monitorVolume = v);
+              s.save();
+            },
+                '${(s.monitorVolume * 100).round()}%'),
             Row(
               children: [
                 Expanded(

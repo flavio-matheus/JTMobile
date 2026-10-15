@@ -33,6 +33,11 @@ class QsoManager {
   String rptSent = '-10';
   String rptRcvd = '';
   int txIndex = 6; // 1..6
+
+  /// **Travar etapa**: quando `true`, a auto-sequência *não* muda a mensagem a transmitir (`txIndex`) ao receber
+  /// respostas — o operador decide qual etapa repetir (ex.: reenviar o R-relatório até a outra estação responder).
+  /// Os relatórios, o indicativo e o fim do QSO continuam sendo atualizados.
+  bool lockStep = false;
   int? txParity; // 0 = slot par (1º), 1 = ímpar (2º); null = qualquer
   DateTime? started;
   bool completed = false;
@@ -70,12 +75,14 @@ class QsoManager {
     txParity = null;
     started = null;
     completed = false;
+    lockStep = false; // a trava vale apenas para o QSO em curso
   }
 
   /// Inicia um QSO respondendo a [d] (clique numa decodificação).
   void startWith(Decode d, {required int slotParity}) {
     final from = d.parsed.from;
     if (from == null) return;
+    lockStep = false;
     dxCall = from;
     dxGrid = d.parsed.grid ?? '';
     rptSent = formatReport(d.snr);
@@ -113,7 +120,10 @@ class QsoManager {
     } else {
       rptSent = formatReport(d.snr);
     }
-    return _advance(d);
+    final keep = txIndex;
+    final ev = _advance(d);
+    if (lockStep && !calling) txIndex = keep; // etapa travada pelo operador
+    return ev;
   }
 
   QsoEvent _advance(Decode d) {

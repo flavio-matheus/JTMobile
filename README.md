@@ -49,6 +49,8 @@ explorável, informações claras da estação que está transmitindo e sincroni
 | **Sincronização app ↔ rádio** | Frequência, modo/DATA/filtro, potência de RF, pré-amplificador e atenuador são **lidos do rádio** e **escritos pelo app**, nos dois sentidos, com proteção contra "eco" (veja [docs/SINCRONIZACAO.md](docs/SINCRONIZACAO.md)). Avisos quando o rádio está fora de USB-D ou da frequência padrão do modo. |
 | **Áudio de baixa latência** | Decimação nativa 48→12 kHz, linha do tempo de áudio que absorve *jitter* e preenche perdas, e decodificação disparada pelo **áudio** (não pelo relógio de parede). Calibração do relógio pelo DT (veja [docs/AUDIO.md](docs/AUDIO.md)). |
 | **Alertas e guia** | **Alerta visual + sonoro + vibração** quando você começa a transmitir, quando uma estação responde e quando o QSO termina (faixa colorida no topo, borda piscando, sons sintetizados). Um **guia na tela** diz o que está acontecendo e qual é o próximo passo, com botão de ação; tutorial "Seu primeiro QSO" (veja [docs/SIMULADOR.md](docs/SIMULADOR.md)). |
+| **Controles rápidos** | Barra inferior com **Auto TX**, **Auto-seq** e **Travar etapa** (caixas de seleção), botões **Ativar TX**, **CQ**, **HALT**, **TUNE** e Logbook. Em *Meu QSO / TX* o botão **▶** de cada mensagem **reenvia aquela etapa** no próximo período. |
+| **Áudio no celular** | Opção de **ouvir o áudio do rádio no alto-falante** do celular (o "assobio" do FT8), com volume próprio. |
 | **Simulador** | Estações fictícias que **respondem de verdade**: você responde a um CQ ou chama CQ e o QSO completo acontece (Tx1…73) sem rádio, com os mesmos alertas. |
 | **Logbook** | Persistente em **ADIF** (`jtmobile_logbook.adi`), com busca, edição, exclusão, dupe-check e exportação **ADIF/CSV** (compartilhar). Campos de status para **LoTW / QRZ.com / eQSL / Club Log / HRDLog** já gravados (integração online: fase 2, veja [docs/LOGBOOK.md](docs/LOGBOOK.md)). |
 
@@ -67,7 +69,7 @@ explorável, informações claras da estação que está transmitindo e sincroni
 | JT65 / JT9 / FST4 / WSPR | ⏳ planejados | Catálogo e interface prontos; decodificadores a portar |
 | Integração LoTW/QRZ/eQSL/Club Log | ⏳ fase 2 | Interface `LogbookService` definida |
 
-Total: **54 testes automatizados** passando e `flutter analyze` sem avisos.
+Total: **60 testes automatizados** passando e `flutter analyze` sem avisos.
 
 ## Instalação do APK
 

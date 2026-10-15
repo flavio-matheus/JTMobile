@@ -44,6 +44,7 @@ Regra de dependência: **UI → Engine → {Radio, Core, Logbook}**. O motor nã
 * **`qso.dart`** — sequenciador Tx1..Tx6 / auto-sequência (lógica pura).
 * **`waterfall.dart`** — buffer circular de linhas de espectro, AGC e conversão para imagem.
 * **`alerts.dart`** — `AlertCenter` (faixa/flash/som/vibração), `AlertSounds` (sons sintetizados) e `NativeAlertPlayer` (canal nativo). Ver [SIMULADOR.md](SIMULADOR.md).
+* **`audio_monitor.dart`** — `AudioMonitor`: espelha o áudio de RX no alto-falante do celular (canal nativo `monitor`).
 * **`sim_script.dart`** — roteiro das estações simuladas (`simReplyTo`), lógica pura testada.
 * `debug_wav.dart` — ferramenta de depuração (somente *debug*): decodifica WAVs de um diretório do app.
 

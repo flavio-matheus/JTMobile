@@ -38,6 +38,7 @@ import '../logbook/qso_record.dart';
 import '../radio/icom_link.dart';
 import '../radio/radio_link.dart';
 import 'alerts.dart';
+import 'audio_monitor.dart';
 import 'audio_timeline.dart';
 import 'qso.dart';
 import 'radio_sync.dart';
@@ -51,9 +52,11 @@ class Engine extends ChangeNotifier {
     DateTime Function()? clock,
     QsoLog? log,
     AlertCenter? alerts,
+    AudioMonitor? monitor,
   })  : _clockFn = clock ?? DateTime.now,
         qsoLog = log ?? QsoLog(),
-        alerts = alerts ?? AlertCenter() {
+        alerts = alerts ?? AlertCenter(),
+        monitor = monitor ?? NativeAudioMonitor() {
     qso = QsoManager(myCall: settings.callsign, myGrid: settings.grid, cqText: settings.customCq);
     settings.addListener(_onSettings);
     _onSettings();
@@ -61,6 +64,9 @@ class Engine extends ChangeNotifier {
 
   /// Alertas visuais/sonoros ao operador (início de TX, resposta de estação, QSO completo).
   final AlertCenter alerts;
+
+  /// Monitor: reproduz o áudio do rádio no alto-falante do celular (opcional).
+  final AudioMonitor monitor;
 
   /// Configurações persistentes.
   final Settings settings;
@@ -195,6 +201,24 @@ class Engine extends ChangeNotifier {
     qso.cqText = settings.customCq;
     alerts.soundEnabled = settings.alertSound;
     alerts.vibrateEnabled = settings.alertVibrate;
+    alerts.bannerEnabled = settings.alertBanner;
+    alerts.flashEnabled = settings.alertFlash;
+    if (!settings.alertBanner) alerts.dismiss(); // fecha a faixa que estiver na tela
+    _syncMonitor();
+  }
+
+  /// Liga/desliga o monitor de áudio conforme a configuração e o estado do rádio, e ajusta o ganho.
+  void _syncMonitor() {
+    final connected = radio?.status == LinkStatus.connected;
+    if (settings.monitorSpeaker && connected) {
+      if (!monitor.running) {
+        monitor.start(sampleRate: RadioLink.audioRate, volume: settings.monitorVolume);
+      } else {
+        monitor.setVolume(settings.monitorVolume);
+      }
+    } else if (monitor.running) {
+      monitor.stop();
+    }
   }
 
   // ------------------------------------------------------------------ guia de operação
@@ -264,6 +288,7 @@ class Engine extends ChangeNotifier {
       if (r.status == LinkStatus.connected && !_radioInit) {
         _radioInit = true;
         _initialSync(r);
+        _syncMonitor();
       }
       _sync?.onLinkChanged();
       notifyListeners();
@@ -331,6 +356,7 @@ class Engine extends ChangeNotifier {
 
   Future<void> _disposeRadio() async {
     stopTx();
+    await monitor.stop();
     await _audioSub?.cancel();
     await _radioSub?.cancel();
     _audioSub = _radioSub = null;
@@ -521,6 +547,57 @@ class Engine extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ------------------------------------------------------------------ controles rápidos do QSO
+
+  /// **Auto TX**: ao tocar em responder (↩) o TX é armado automaticamente.
+  void setAutoTx(bool on) {
+    settings.replyEnablesTx = on;
+    settings.save();
+    notifyListeners();
+  }
+
+  /// **Auto-sequência**: o app avança Tx1→Tx5 conforme as respostas recebidas.
+  void setAutoSeq(bool on) {
+    settings.autoSeq = on;
+    settings.save();
+    notifyListeners();
+  }
+
+  /// Botão **CQ**: começa a chamar CQ geral e arma o TX; se já estiver chamando CQ, para.
+  void toggleCq() {
+    if (txEnabled && qso.dxCall.isEmpty) {
+      haltTx();
+      return;
+    }
+    callCq();
+    setTxEnabled(true);
+  }
+
+  /// Seleciona a etapa [i] (1..6) e a **envia no próximo período de TX**, rearmando a contagem de tentativas.
+  /// Use para reenviar uma etapa específica (ex.: o R-relatório) ou voltar a uma etapa anterior.
+  void sendStep(int i) {
+    if (i != 6 && qso.dxCall.isEmpty) {
+      lastError = 'Selecione uma estação (↩ numa chamada CQ) antes de enviar esta etapa.';
+      notifyListeners();
+      return;
+    }
+    qso.txIndex = i;
+    if (qso.txParity != null) txParity = qso.txParity!;
+    _txCount = 0; // zera as tentativas
+    if (!txEnabled) {
+      setTxEnabled(true);
+    }
+    alerts.show(AlertKind.info, 'Etapa Tx$i selecionada',
+        '${qso.message(i)}\nSerá enviada no ${txParity == 0 ? '1º' : '2º'} período, em ${secondsUntilTxSlot().ceil()} s.');
+    notifyListeners();
+  }
+
+  /// Trava/destrava a etapa atual: travada, a auto-sequência não muda a mensagem a transmitir.
+  void setLockStep(bool on) {
+    qso.lockStep = on;
+    notifyListeners();
+  }
+
   /// Volta ao modo "chamar CQ".
   void callCq() {
     qso.clear();
@@ -542,6 +619,8 @@ class Engine extends ChangeNotifier {
   void _onRxAudio(Int16List pcm48) {
     final dec = _dec;
     if (dec == null || pcm48.isEmpty) return;
+    // Monitor no alto-falante (independente da decodificação; mudo durante a TX)
+    if (monitor.running && !transmitting && !tuning) monitor.write(pcm48);
     final arrivalUs = now().microsecondsSinceEpoch;
     final timing = _timeline.onChunk(arrivalUs, pcm48.length);
     audioJitterMs = audioJitterMs * 0.95 + 0.05 * _estimateJitterMs(arrivalUs);
@@ -903,7 +982,7 @@ class Engine extends ChangeNotifier {
       if (!qso.completed) _finishQso();
       txEnabled = false;
       qso.clear();
-    } else if (qso.dxCall.isNotEmpty && _txCount >= 12) {
+    } else if (qso.dxCall.isNotEmpty && _txCount >= settings.txMaxAttempts) {
       txEnabled = false;
       lastError = 'Sem resposta de ${qso.dxCall}: TX desativado.';
     }

@@ -11,7 +11,7 @@
 cd app
 flutter pub get
 flutter analyze            # deve terminar com "No issues found!"
-flutter test               # 54 testes (unitários + protocolo de rede)
+flutter test               # 60 testes (unitários + protocolo de rede)
 flutter build apk --release --split-per-abi    # APKs por ABI em build/app/outputs/flutter-apk/
 flutter build apk --debug --target-platform android-x64   # rápido, para o emulador x86_64
 ```
@@ -47,6 +47,7 @@ para permitir o login via navegador na primeira vez.
 | `test/audio_timeline_test.dart` | `AudioTimeline`: jitter, perda de 100 ms, deriva de relógio |
 | `test/sim_qso_test.dart` | QsoManager conversando com as estações simuladas: roteiros A e B completos, casos sem resposta |
 | `test/alerts_test.dart`, `test/alerts_priority_test.dart` | Sons de alerta (PCM), `AlertCenter` (som/vibração/auto-dispensa/histórico) e prioridade entre alertas |
+| `test/controls_test.dart` | Travar etapa/reenviar etapa (`QsoManager.lockStep`) e opções de alerta (faixa/borda) |
 | `test/modes_test.dart` | Catálogo de modos e bandas |
 | `test/logbook_test.dart` | ADIF (UTF-8), `QsoRecord`, `QsoLog` (persistência, dupes, importação, CSV, status de serviços) |
 

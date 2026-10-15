@@ -15,15 +15,25 @@ import android.os.VibratorManager
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Ponte nativa do JTMobile. Dois canais (ver docs/ARQUITETURA.md):
  *  - `br.poinsp.ft_mobile/net`   : `bindWifi` fixa o app na rede Wi-Fi do rádio;
- *  - `br.poinsp.ft_mobile/alert` : `playPcm` toca um alerta sonoro sintetizado no Dart e `vibrate` vibra.
+  - `br.poinsp.ft_mobile/alert` : `playPcm` toca um alerta sonoro sintetizado no Dart e `vibrate` vibra;
+ *  - `br.poinsp.ft_mobile/monitor`: `start`/`write`/`volume`/`stop` reproduzem o áudio recebido do rádio
+ *    no alto-falante do celular (monitor do "assobio" dos modos digitais).
  */
 class MainActivity : FlutterActivity() {
     private var alertTrack: AudioTrack? = null
     private val handler = Handler(Looper.getMainLooper())
+
+    // Monitor de áudio (AudioTrack em modo stream; as escritas bloqueantes rodam em uma thread própria)
+    private var monTrack: AudioTrack? = null
+    private var monExecutor: ExecutorService? = null
+    private val monPending = AtomicInteger(0)
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -32,6 +42,28 @@ class MainActivity : FlutterActivity() {
         MethodChannel(messenger, "br.poinsp.ft_mobile/net").setMethodCallHandler { call, result ->
             when (call.method) {
                 "bindWifi" -> result.success(bindToWifi())
+                else -> result.notImplemented()
+            }
+        }
+
+        MethodChannel(messenger, "br.poinsp.ft_mobile/monitor").setMethodCallHandler { call, result ->
+            when (call.method) {
+                "start" -> {
+                    monitorStart(call.argument<Int>("rate") ?: 48000, (call.argument<Double>("volume") ?: 0.8).toFloat())
+                    result.success(null)
+                }
+                "write" -> {
+                    call.argument<ByteArray>("pcm")?.let { monitorWrite(it) }
+                    result.success(null)
+                }
+                "volume" -> {
+                    monTrack?.setVolume((call.argument<Double>("volume") ?: 0.8).toFloat())
+                    result.success(null)
+                }
+                "stop" -> {
+                    monitorStop()
+                    result.success(null)
+                }
                 else -> result.notImplemented()
             }
         }
@@ -134,5 +166,82 @@ class MainActivity : FlutterActivity() {
             }
         } catch (_: Exception) {
         }
+    }
+    /**
+     * Liga o monitor: AudioTrack mono 16 bit em modo stream, volume de mídia x [volume].
+     * Buffer de ~200 ms: suficiente contra pequenas oscilações sem acumular atraso perceptível.
+     */
+    private fun monitorStart(rate: Int, volume: Float) {
+        monitorStop()
+        try {
+            val minBuf = AudioTrack.getMinBufferSize(rate, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT)
+            val bufSize = maxOf(minBuf, rate * 2 / 5)
+            val attrs = AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_MEDIA)
+                .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                .build()
+            val fmt = AudioFormat.Builder()
+                .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+                .setSampleRate(rate)
+                .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
+                .build()
+            val track = AudioTrack.Builder()
+                .setAudioAttributes(attrs)
+                .setAudioFormat(fmt)
+                .setBufferSizeInBytes(bufSize)
+                .setTransferMode(AudioTrack.MODE_STREAM)
+                .build()
+            track.setVolume(volume)
+            track.play()
+            monTrack = track
+            monExecutor = Executors.newSingleThreadExecutor()
+        } catch (_: Exception) {
+            monitorStop()
+        }
+    }
+
+    /**
+     * Enfileira um pacote de áudio. Se a fila crescer (dispositivo lento), descarta pacotes para o
+     * monitor nunca ficar atrasado em relação ao rádio.
+     */
+    private fun monitorWrite(pcm: ByteArray) {
+        val ex = monExecutor ?: return
+        val track = monTrack ?: return
+        if (monPending.get() > 12) return
+        monPending.incrementAndGet()
+        try {
+            ex.execute {
+                try {
+                    track.write(pcm, 0, pcm.size)
+                } catch (_: Exception) {
+                } finally {
+                    monPending.decrementAndGet()
+                }
+            }
+        } catch (_: Exception) {
+            monPending.decrementAndGet()
+        }
+    }
+
+    private fun monitorStop() {
+        monExecutor?.shutdownNow()
+        monExecutor = null
+        monTrack?.let {
+            try {
+                it.stop()
+            } catch (_: Exception) {
+            }
+            try {
+                it.release()
+            } catch (_: Exception) {
+            }
+        }
+        monTrack = null
+        monPending.set(0)
+    }
+
+    override fun onDestroy() {
+        monitorStop()
+        super.onDestroy()
     }
 }

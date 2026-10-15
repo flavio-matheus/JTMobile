@@ -147,6 +147,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   }
 }
 
+/// Barra inferior: opções rápidas (Auto TX, Auto-seq) e botões de ação (TX, CQ, HALT, TUNE, Log).
 class _ActionBar extends StatelessWidget {
   const _ActionBar({required this.engine, required this.onLog});
   final Engine engine;
@@ -158,58 +159,148 @@ class _ActionBar extends StatelessWidget {
       animation: engine,
       builder: (context, _) {
         final en = engine.txEnabled;
-        final keyed = engine.transmitting || engine.tuning;
+        final cqActive = en && engine.qso.dxCall.isEmpty;
+        final s = engine.settings;
+        Widget label(String t) => FittedBox(fit: BoxFit.scaleDown, child: Text(t, maxLines: 1, softWrap: false));
+        const pad = EdgeInsets.symmetric(horizontal: 4);
         return Container(
           color: Pal.panel,
-          padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
-          child: Row(
+          padding: const EdgeInsets.fromLTRB(8, 2, 8, 6),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Expanded(
-                flex: 4,
-                child: FilledButton.icon(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: en ? Pal.tx : Pal.panel2,
-                    foregroundColor: en ? Colors.white : Pal.text,
-                    minimumSize: const Size(0, 46),
+              // ---- opções rápidas (também em Configurações)
+              Row(
+                children: [
+                  _OptionCheck(
+                    label: 'Auto TX',
+                    tooltip: 'Ao tocar em responder (↩), o TX é armado automaticamente',
+                    value: s.replyEnablesTx,
+                    onChanged: engine.setAutoTx,
                   ),
-                  onPressed: () => engine.setTxEnabled(!en),
-                  icon: Icon(en ? Icons.cell_tower : Icons.power_settings_new),
-                  label: Text(en ? 'TX ATIVO' : 'Ativar TX', maxLines: 1, overflow: TextOverflow.ellipsis),
-                ),
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                flex: 3,
-                child: OutlinedButton(
-                  style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 4), minimumSize: const Size(0, 46), foregroundColor: Pal.warn),
-                  onPressed: engine.haltTx,
-                  child: const Text('HALT', softWrap: false),
-                ),
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                flex: 3,
-                child: OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    minimumSize: const Size(0, 46),
-                    backgroundColor: engine.tuning ? Pal.tx.withValues(alpha: 0.25) : null,
+                  const SizedBox(width: 10),
+                  _OptionCheck(
+                    label: 'Auto-seq',
+                    tooltip: 'Avança sozinho Tx1 → Tx5 conforme as respostas',
+                    value: s.autoSeq,
+                    onChanged: engine.setAutoSeq,
                   ),
-                  onPressed: () => engine.tune(!engine.tuning),
-                  child: const Text('TUNE', softWrap: false),
-                ),
+                  const SizedBox(width: 10),
+                  _OptionCheck(
+                    label: 'Travar etapa',
+                    tooltip: 'Não avançar de etapa: repete a mensagem escolhida em Meu QSO / TX',
+                    value: engine.qso.lockStep,
+                    onChanged: engine.setLockStep,
+                  ),
+                ],
               ),
-              const SizedBox(width: 6),
-              IconButton.outlined(
-                tooltip: 'Log de QSOs',
-                onPressed: onLog,
-                icon: const Icon(Icons.menu_book),
+              Row(
+                children: [
+                  Expanded(
+                    flex: 4,
+                    child: FilledButton.icon(
+                      style: FilledButton.styleFrom(
+                        padding: pad,
+                        backgroundColor: en ? Pal.tx : Pal.panel2,
+                        foregroundColor: en ? Colors.white : Pal.text,
+                        minimumSize: const Size(0, 44),
+                      ),
+                      onPressed: () => engine.setTxEnabled(!en),
+                      icon: Icon(en ? Icons.cell_tower : Icons.power_settings_new, size: 18),
+                      label: label(en ? 'TX ATIVO' : 'Ativar TX'),
+                    ),
+                  ),
+                  const SizedBox(width: 5),
+                  Expanded(
+                    flex: 3,
+                    child: FilledButton.icon(
+                      style: FilledButton.styleFrom(
+                        padding: pad,
+                        backgroundColor: cqActive ? Pal.tx : Pal.rx.withValues(alpha: 0.18),
+                        foregroundColor: cqActive ? Colors.white : Pal.rx,
+                        side: BorderSide(color: cqActive ? Pal.tx : Pal.rx),
+                        minimumSize: const Size(0, 44),
+                      ),
+                      onPressed: engine.toggleCq,
+                      icon: const Icon(Icons.campaign, size: 18),
+                      label: label(cqActive ? 'CQ ■' : 'CQ'),
+                    ),
+                  ),
+                  const SizedBox(width: 5),
+                  Expanded(
+                    flex: 3,
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(padding: pad, minimumSize: const Size(0, 44), foregroundColor: Pal.warn),
+                      onPressed: engine.haltTx,
+                      child: label('HALT'),
+                    ),
+                  ),
+                  const SizedBox(width: 5),
+                  Expanded(
+                    flex: 3,
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        padding: pad,
+                        minimumSize: const Size(0, 44),
+                        backgroundColor: engine.tuning ? Pal.tx.withValues(alpha: 0.25) : null,
+                      ),
+                      onPressed: () => engine.tune(!engine.tuning),
+                      child: label('TUNE'),
+                    ),
+                  ),
+                  const SizedBox(width: 5),
+                  IconButton.outlined(
+                    tooltip: 'Logbook',
+                    visualDensity: VisualDensity.compact,
+                    onPressed: onLog,
+                    icon: const Icon(Icons.menu_book),
+                  ),
+                ],
               ),
-              if (keyed) const SizedBox(width: 2),
             ],
           ),
         );
       },
+    );
+  }
+}
+
+/// Caixa de seleção compacta com rótulo, para opções rápidas na tela principal.
+class _OptionCheck extends StatelessWidget {
+  const _OptionCheck({required this.label, required this.value, required this.onChanged, this.tooltip});
+  final String label;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+  final String? tooltip;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip ?? label,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(6),
+        onTap: () => onChanged(!value),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 2),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: 22,
+                height: 22,
+                child: Checkbox(
+                  value: value,
+                  visualDensity: VisualDensity.compact,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  onChanged: (v) => onChanged(v ?? false),
+                ),
+              ),
+              const SizedBox(width: 4),
+              Text(label, style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: value ? Pal.text : Pal.dim)),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
