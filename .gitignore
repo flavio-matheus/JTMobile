@@ -1,0 +1,14 @@
+﻿# Artefatos de build e binários (gere com 'flutter build apk', veja docs/DESENVOLVIMENTO.md)
+dist/
+*.apk
+*.aab
+build_native/
+# Arquivos locais / temporários
+*.log
+.DS_Store
+Thumbs.db
+# Credenciais e segredos NUNCA devem ser versionados
+*.jks
+*.keystore
+key.properties
+.env
