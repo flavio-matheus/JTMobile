@@ -11,7 +11,7 @@
 cd app
 flutter pub get
 flutter analyze            # deve terminar com "No issues found!"
-flutter test               # 41 testes (unitários + protocolo de rede)
+flutter test               # 54 testes (unitários + protocolo de rede)
 flutter build apk --release --split-per-abi    # APKs por ABI em build/app/outputs/flutter-apk/
 flutter build apk --debug --target-platform android-x64   # rápido, para o emulador x86_64
 ```
@@ -45,6 +45,8 @@ para permitir o login via navegador na primeira vez.
 | `test/icom_link_test.dart` | `IcomNetworkRadio` completo contra um **servidor Icom falso** (handshake, login, auth, abertura de fluxos, CI-V, leitura de ajustes, áudio RX/TX) e falha com mensagem clara |
 | `test/radio_sync_test.dart` | `RadioSync`: adoção, mudança no rádio, eco, resposta atrasada, janela de guarda |
 | `test/audio_timeline_test.dart` | `AudioTimeline`: jitter, perda de 100 ms, deriva de relógio |
+| `test/sim_qso_test.dart` | QsoManager conversando com as estações simuladas: roteiros A e B completos, casos sem resposta |
+| `test/alerts_test.dart`, `test/alerts_priority_test.dart` | Sons de alerta (PCM), `AlertCenter` (som/vibração/auto-dispensa/histórico) e prioridade entre alertas |
 | `test/modes_test.dart` | Catálogo de modos e bandas |
 | `test/logbook_test.dart` | ADIF (UTF-8), `QsoRecord`, `QsoLog` (persistência, dupes, importação, CSV, status de serviços) |
 
@@ -66,6 +68,7 @@ Gravações de referência com a saída do WSJT-X: `https://github.com/kgoba/ft8
 (resultado atual: ver tabela em `README.md`).
 
 ## 7. Simulador de rádio
+Veja o passo a passo do QSO simulado, os alertas e o guia em [SIMULADOR.md](SIMULADOR.md).
 *Configurações → Tipo de conexão → Simulador* (padrão na 1ª execução). Gera ruído + 8 estações FT8/FT4 reais, responde ao CQ
 (estação `PY2SIM`) e permite testar QSO/TX/logbook sem hardware. `SimRadio.radioSideChange(...)` simula mudanças feitas no painel do rádio.
 Para pré-configurar indicativo/grid num build *debug* sem digitar: escreva `shared_prefs/FlutterSharedPreferences.xml` via `adb shell run-as br.poinsp.ft_mobile`

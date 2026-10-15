@@ -19,7 +19,8 @@ App Android (Flutter + núcleo C via FFI) para modos digitais de HF (FT8/FT4 hoj
 | Sequência de QSO (Tx1…Tx6) | `app/lib/engine/qso.dart` |
 | Logbook/ADIF | `app/lib/logbook/*` (+ `docs/LOGBOOK.md`) |
 | Telas | `app/lib/ui/*` |
-| Simulador de rádio | `app/lib/engine/sim_radio.dart` |
+| Simulador de rádio e roteiros das estações | `app/lib/engine/sim_radio.dart`, `sim_script.dart` (+ `docs/SIMULADOR.md`) |
+| Alertas (som/visual/vibração) e guia na tela | `app/lib/engine/alerts.dart`, `app/lib/ui/guidance.dart` |
 
 Arquitetura completa: `docs/ARQUITETURA.md`. Pendências: `docs/ROADMAP.md`.
 
@@ -27,7 +28,7 @@ Arquitetura completa: `docs/ARQUITETURA.md`. Pendências: `docs/ROADMAP.md`.
 ```powershell
 cd app
 flutter analyze      # precisa terminar com "No issues found!"
-flutter test         # todos os testes devem passar (41 hoje)
+flutter test         # todos os testes devem passar (54 hoje)
 ```
 * Mudou protocolo/CI-V/sync/áudio/logbook/modos? **Adicione/atualize testes** (`app/test/`). Lógica pura não deve fazer I/O.
 * Mudou o código C ou a UI? Gere o APK (`flutter build apk --debug --target-platform android-x64`) e teste no emulador/aparelho

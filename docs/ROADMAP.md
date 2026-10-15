@@ -26,7 +26,7 @@ Priorização sugerida (1 = mais urgente). Marque aqui o que for concluído e re
 - [ ] Armazenamento seguro de credenciais (`flutter_secure_storage`).
 
 ## P5 — Operação e robustez
-- [ ] **Serviço em primeiro plano** (operar com a tela apagada) + notificação persistente.
+- [ ] **Serviço em primeiro plano** (operar com a tela apagada) + notificação persistente + **notificações do sistema** (hoje os alertas visuais/sonoros só funcionam com o app aberto; veja docs/SIMULADOR.md).
 - [ ] Sincronização de hora (NTP/GPS) com indicação de erro; calibração automática opcional pelo DT.
 - [ ] Reconexão inteligente (mudança de rede), diagnósticos de rede (RTT, perdas) na UI.
 - [ ] **PSK Reporter** (envio de spots), alertas (sons) para CQ de países novos / chamadas para mim.

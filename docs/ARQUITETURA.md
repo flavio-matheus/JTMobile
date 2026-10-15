@@ -43,6 +43,8 @@ Regra de dependência: **UI → Engine → {Radio, Core, Logbook}**. O motor nã
 * **`radio_sync.dart`** — sincronização bidirecional. Ver [SINCRONIZACAO.md](SINCRONIZACAO.md).
 * **`qso.dart`** — sequenciador Tx1..Tx6 / auto-sequência (lógica pura).
 * **`waterfall.dart`** — buffer circular de linhas de espectro, AGC e conversão para imagem.
+* **`alerts.dart`** — `AlertCenter` (faixa/flash/som/vibração), `AlertSounds` (sons sintetizados) e `NativeAlertPlayer` (canal nativo). Ver [SIMULADOR.md](SIMULADOR.md).
+* **`sim_script.dart`** — roteiro das estações simuladas (`simReplyTo`), lógica pura testada.
 * `debug_wav.dart` — ferramenta de depuração (somente *debug*): decodifica WAVs de um diretório do app.
 
 ### 2.3 `lib/core/` — núcleo compartilhado
@@ -56,7 +58,7 @@ Regra de dependência: **UI → Engine → {Radio, Core, Logbook}**. O motor nã
 consultas, exportação), `log_services.dart` (interface das integrações online — fase 2). Ver [LOGBOOK.md](LOGBOOK.md).
 
 ### 2.5 `lib/ui/`
-`home_page.dart` (layout retrato/paisagem), `status_header.dart`, `waterfall_view.dart`, `activity_list.dart`,
+`home_page.dart` (layout retrato/paisagem), `guidance.dart` (alertas na tela, guia contextual, tutorial), `status_header.dart`, `waterfall_view.dart`, `activity_list.dart`,
 `qso_panel.dart`, `station_sheet.dart`, `radio_sheet.dart`, `log_page.dart`, `settings_page.dart`, `theme.dart`.
 
 ### 2.6 Código nativo (`app/android/app/src/main/cpp/`)

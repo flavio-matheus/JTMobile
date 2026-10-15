@@ -48,6 +48,8 @@ explorável, informações claras da estação que está transmitindo e sincroni
 | **QSO** | Mensagens Tx1–Tx6, auto-sequência, escolha do período de TX (1º/2º), manter frequência de TX, CQ personalizável, HALT e TUNE. |
 | **Sincronização app ↔ rádio** | Frequência, modo/DATA/filtro, potência de RF, pré-amplificador e atenuador são **lidos do rádio** e **escritos pelo app**, nos dois sentidos, com proteção contra "eco" (veja [docs/SINCRONIZACAO.md](docs/SINCRONIZACAO.md)). Avisos quando o rádio está fora de USB-D ou da frequência padrão do modo. |
 | **Áudio de baixa latência** | Decimação nativa 48→12 kHz, linha do tempo de áudio que absorve *jitter* e preenche perdas, e decodificação disparada pelo **áudio** (não pelo relógio de parede). Calibração do relógio pelo DT (veja [docs/AUDIO.md](docs/AUDIO.md)). |
+| **Alertas e guia** | **Alerta visual + sonoro + vibração** quando você começa a transmitir, quando uma estação responde e quando o QSO termina (faixa colorida no topo, borda piscando, sons sintetizados). Um **guia na tela** diz o que está acontecendo e qual é o próximo passo, com botão de ação; tutorial "Seu primeiro QSO" (veja [docs/SIMULADOR.md](docs/SIMULADOR.md)). |
+| **Simulador** | Estações fictícias que **respondem de verdade**: você responde a um CQ ou chama CQ e o QSO completo acontece (Tx1…73) sem rádio, com os mesmos alertas. |
 | **Logbook** | Persistente em **ADIF** (`jtmobile_logbook.adi`), com busca, edição, exclusão, dupe-check e exportação **ADIF/CSV** (compartilhar). Campos de status para **LoTW / QRZ.com / eQSL / Club Log / HRDLog** já gravados (integração online: fase 2, veja [docs/LOGBOOK.md](docs/LOGBOOK.md)). |
 
 ## Estado do projeto
@@ -65,7 +67,7 @@ explorável, informações claras da estação que está transmitindo e sincroni
 | JT65 / JT9 / FST4 / WSPR | ⏳ planejados | Catálogo e interface prontos; decodificadores a portar |
 | Integração LoTW/QRZ/eQSL/Club Log | ⏳ fase 2 | Interface `LogbookService` definida |
 
-Total: **41 testes automatizados** passando e `flutter analyze` sem avisos.
+Total: **54 testes automatizados** passando e `flutter analyze` sem avisos.
 
 ## Instalação do APK
 
@@ -111,7 +113,7 @@ Dicas: ligue o **CI-V Transceive** no rádio para que mudanças de frequência/m
 2. Toque na **frequência** (cabeçalho) para abrir o **painel do rádio**: veja/ajuste frequência, modo, potência, pré-amp e ATT.
 3. Escolha **modo** (FT8/FT4) e **banda**: o app leva o rádio à frequência padrão e a **USB-D**.
 4. Deslize a **waterfall** (modo *Dial TX*) até um trecho livre: a mira central é a sua frequência de transmissão. Pinça = zoom.
-5. Toque em **responder** (ícone) numa chamada CQ — ou use **CQ** — e **Ativar TX**. **HALT** interrompe tudo na hora.
+5. Toque em **↩ (responder)** numa chamada CQ (linha verde): o app **arma o TX** e conduz o QSO sozinho — ou use **Chamar CQ** no guia. Você é **avisado** (visual + som + vibração) ao transmitir, quando a estação responde e quando o QSO termina. **HALT** interrompe tudo na hora.
 6. Ao concluir o QSO o app pede a confirmação do registro; o **Logbook** permite buscar, editar e exportar ADIF/CSV.
 
 ## Como funciona (resumo)
@@ -173,6 +175,7 @@ Resumo (completo em [docs/ROADMAP.md](docs/ROADMAP.md)):
 | [docs/ARQUITETURA.md](docs/ARQUITETURA.md) | Camadas, módulos, fluxo de dados, decisões de projeto |
 | [docs/PROTOCOLO_ICOM.md](docs/PROTOCOLO_ICOM.md) | Protocolo UDP de rede da Icom e CI-V, formato dos pacotes |
 | [docs/SINCRONIZACAO.md](docs/SINCRONIZACAO.md) | Sincronização app ↔ rádio (regras, janela de guarda, parâmetros) |
+| [docs/SIMULADOR.md](docs/SIMULADOR.md) | Como fazer um QSO completo no simulador, alertas, guia na tela |
 | [docs/AUDIO.md](docs/AUDIO.md) | Caminho de áudio, latência, `AudioTimeline`, TX, calibração por DT |
 | [docs/MODOS.md](docs/MODOS.md) | Modos digitais e **como adicionar um novo modo** |
 | [docs/LOGBOOK.md](docs/LOGBOOK.md) | Logbook, ADIF e plano de integração com LoTW/QRZ/eQSL/Club Log |
