@@ -11,6 +11,13 @@ explorável, informações claras da estação que está transmitindo e sincroni
 
 ---
 
+<p align="center">
+  <img src="docs/img/tela-principal.png" width="260" alt="Tela principal: waterfall, atividade e indicadores">
+  <img src="docs/img/painel-radio.png" width="260" alt="Painel do rádio: sincronização bidirecional">
+  <img src="docs/img/seletor-modo.png" width="260" alt="Seletor de modos digitais">
+</p>
+<p align="center"><sub>Capturas no emulador Android com o <b>simulador de rádio</b> (estações e sinais fictícios).</sub></p>
+
 ## Sumário
 
 1. [Recursos](#recursos)
