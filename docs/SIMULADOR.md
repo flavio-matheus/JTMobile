@@ -109,6 +109,8 @@ O ícone **?** no topo reabre o tutorial *Seu primeiro QSO* (exibido na primeira
 ## 6. Ouvir o áudio do rádio no alto-falante do celular
 Para quem gosta de ouvir o "assobio" dos modos digitais: ative **Ouvir o áudio do rádio no celular** (menu de sino ou *Configurações → Áudio do rádio no celular*).
 * O app reproduz o PCM recebido do rádio por um `AudioTrack` em modo *stream* (canal nativo `br.poinsp.ft_mobile/monitor`), no volume de **mídia** do celular × o **Volume do monitor**.
-* É independente da decodificação (nunca a afeta) e fica **mudo durante a TX**.
+* É independente da decodificação (nunca a afeta).
+* **Ouvir o meu próprio áudio de TX:** com o monitor ligado, a opção **Ouvir também o meu áudio de TX** (marcada por padrão) toca no celular o sinal que o app está enviando ao rádio — o tom do FT8/FT4 durante a transmissão e a portadora do **TUNE** — para você avaliar o nível e a qualidade do áudio. Desmarque para o monitor ficar mudo durante a TX.
+* ⚠ O que se ouve é o áudio **enviado ao rádio** (gerado no app), não a RF irradiada; para ouvir o sinal real fora do ar use outro receptor/SDR.
 * ⚠ Cuidado com realimentação se o celular ficar perto do microfone do rádio.
 * Código: `lib/engine/audio_monitor.dart` + `MainActivity.kt`.

@@ -8,8 +8,10 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 - **Barra inferior**: botão **CQ** (liga/desliga a chamada geral) e caixas **Auto TX**, **Auto-seq** e **Travar etapa**.
 - **Reenviar etapa específica**: botão ▶ em cada mensagem Tx1…Tx6 (envia no próximo período e rearma as tentativas); *Travar etapa* impede a auto-sequência de mudar a mensagem; tentativas por etapa configuráveis (padrão 12).
 - **Monitor de áudio no alto-falante do celular** (`engine/audio_monitor.dart`, canal nativo `monitor`): ouvir o áudio do rádio, com volume próprio, mudo durante a TX.
+- **Ouvir o próprio áudio de TX** no alto-falante (opção `monitorTx`, ligada por padrão com o monitor): espelha o PCM enviado ao rádio, inclusive o tom do TUNE.
 - Guia na tela mais compacto (mais espaço para a waterfall).
-- Testes `controls_test` (60 no total).
+- Correção: `Engine` não notifica ouvintes depois de `dispose()`; novo teste de integração `engine_monitor_test` (62 no total).
+- Testes `controls_test` (62 no total).
 
 ### Adicionado (alertas, guia e simulador)
 - **Alertas visuais e sonoros** (`engine/alerts.dart`, `ui/guidance.dart`): faixa no topo + borda piscando + som sintetizado + vibração ao

@@ -375,8 +375,18 @@ class Engine extends ChangeNotifier {
     notifyListeners();
   }
 
+  bool _disposed = false;
+
+  /// Após [dispose], callbacks assíncronos tardios (streams, timers) não devem notificar ouvintes.
+  @override
+  void notifyListeners() {
+    if (_disposed) return;
+    super.notifyListeners();
+  }
+
   @override
   void dispose() {
+    _disposed = true;
     _timer?.cancel();
     _txTimer?.cancel();
     _tuneTimer?.cancel();
@@ -967,7 +977,9 @@ class Engine extends ChangeNotifier {
     final ahead = 0.12 + settings.txAdvanceMs / 1000.0;
     final target = ((elapsed + ahead) * RadioLink.audioRate).floor().clamp(0, pcm.length);
     if (target > _txSent) {
-      r.sendTxAudio(Int16List.sublistView(pcm, _txSent, target));
+      final chunk = Int16List.sublistView(pcm, _txSent, target);
+      r.sendTxAudio(chunk);
+      _monitorTx(chunk); // ouve o próprio sinal de TX no alto-falante (se habilitado)
       _txSent = target;
     }
     if (_txSent >= pcm.length && elapsed * RadioLink.audioRate >= pcm.length) {
@@ -1028,8 +1040,15 @@ class Engine extends ChangeNotifier {
         phase += w;
       }
       r.sendTxAudio(chunk);
+      _monitorTx(chunk); // ouve o tom do TUNE no alto-falante (se habilitado)
     });
     notifyListeners();
+  }
+
+  /// Espelha no alto-falante o áudio de **TX** que está sendo enviado ao rádio, quando o monitor está
+  /// ligado e a opção `monitorTx` está marcada. Assim o operador escuta o que está transmitindo.
+  void _monitorTx(Int16List chunk) {
+    if (monitor.running && settings.monitorTx) monitor.write(chunk);
   }
 
   static String _hhmmss(DateTime t) =>

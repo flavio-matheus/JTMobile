@@ -517,6 +517,8 @@ class _QuickMenu extends StatelessWidget {
             s.alertVibrate = !s.alertVibrate;
           case 'monitor':
             s.monitorSpeaker = !s.monitorSpeaker;
+          case 'monitorTx':
+            s.monitorTx = !s.monitorTx;
         }
         s.save(); // notifica o motor (faixa, som, monitor...)
       },
@@ -527,6 +529,7 @@ class _QuickMenu extends StatelessWidget {
         item('vibrate', 'Vibração dos alertas', s.alertVibrate),
         const PopupMenuDivider(),
         item('monitor', 'Ouvir o áudio do rádio no celular', s.monitorSpeaker),
+        item('monitorTx', 'Ouvir também o meu áudio de TX', s.monitorTx),
       ],
     );
   }

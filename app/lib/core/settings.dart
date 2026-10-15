@@ -94,6 +94,10 @@ class Settings extends ChangeNotifier {
   /// Volume do monitor de áudio (0..1), aplicado sobre o volume de mídia do celular.
   double monitorVolume = 0.8;
 
+  /// Com o monitor ligado, reproduz também o **meu próprio áudio de TX** (o que está sendo enviado ao rádio),
+  /// para eu perceber como o sinal está saindo (nível, qualidade, TUNE).
+  bool monitorTx = true;
+
   /// O tutorial de boas-vindas já foi exibido.
   bool tutorialSeen = false;
 
@@ -124,6 +128,7 @@ class Settings extends ChangeNotifier {
     txMaxAttempts = p.getInt('txMaxAttempts') ?? txMaxAttempts;
     monitorSpeaker = p.getBool('monitorSpeaker') ?? monitorSpeaker;
     monitorVolume = p.getDouble('monitorVolume') ?? monitorVolume;
+    monitorTx = p.getBool('monitorTx') ?? monitorTx;
     tutorialSeen = p.getBool('tutorialSeen') ?? tutorialSeen;
     txBufferMs = p.getInt('txBufferMs') ?? txBufferMs;
     txAdvanceMs = p.getInt('txAdvanceMs') ?? txAdvanceMs;
@@ -164,6 +169,7 @@ class Settings extends ChangeNotifier {
     await p.setInt('txMaxAttempts', txMaxAttempts);
     await p.setBool('monitorSpeaker', monitorSpeaker);
     await p.setDouble('monitorVolume', monitorVolume);
+    await p.setBool('monitorTx', monitorTx);
     await p.setBool('tutorialSeen', tutorialSeen);
     await p.setInt('txBufferMs', txBufferMs);
     await p.setInt('txAdvanceMs', txAdvanceMs);

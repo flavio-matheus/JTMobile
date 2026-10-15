@@ -29,7 +29,7 @@ Arquitetura completa: `docs/ARQUITETURA.md`. Pendências: `docs/ROADMAP.md`.
 ```powershell
 cd app
 flutter analyze      # precisa terminar com "No issues found!"
-flutter test         # todos os testes devem passar (60 hoje)
+flutter test         # todos os testes devem passar (62 hoje)
 ```
 * Mudou protocolo/CI-V/sync/áudio/logbook/modos? **Adicione/atualize testes** (`app/test/`). Lógica pura não deve fazer I/O.
 * Mudou o código C ou a UI? Gere o APK (`flutter build apk --debug --target-platform android-x64`) e teste no emulador/aparelho

@@ -245,6 +245,19 @@ class _SettingsPageState extends State<SettingsPage> {
                 s.save();
               },
             ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Ouvir também o meu áudio de TX'),
+              subtitle: const Text(
+                  'Com o monitor ligado, toca no celular o sinal que você está transmitindo (e o tom do TUNE) — '
+                  'ótimo para avaliar nível e qualidade do áudio enviado ao rádio.',
+                  style: TextStyle(fontSize: 11)),
+              value: s.monitorTx,
+              onChanged: (v) {
+                setState(() => s.monitorTx = v);
+                s.save();
+              },
+            ),
             _slider('Volume do monitor', s.monitorVolume, 0, 1, (v) {
               setState(() => s.monitorVolume = v);
               s.save();
