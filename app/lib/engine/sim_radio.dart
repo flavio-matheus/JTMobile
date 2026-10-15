@@ -1,8 +1,8 @@
 /// Rádio simulado para desenvolvimento/testes sem hardware.
 ///
 /// Gera áudio de 48 kHz com ruído branco e sinais FT8/FT4 **reais** (codificados com a mesma
-/// biblioteca nativa), alinhados ao relógio UTC, e responde às chamadas do usuário (estação
-/// "PY2SIM"), permitindo exercitar decodificação, QSO automático e TX de ponta a ponta.
+/// biblioteca nativa), alinhados ao relógio UTC, e responde às transmissões do usuário (veja `sim_script.dart`;
+/// roteiros A e B), permitindo exercitar decodificação, QSO automático e TX de ponta a ponta.
 library;
 
 import 'dart:async';
@@ -12,16 +12,7 @@ import 'dart:typed_data';
 import '../core/ftx_native.dart';
 import '../radio/civ.dart';
 import '../radio/radio_link.dart';
-
-/// Estação fictícia do simulador.
-class _SimStation {
-  _SimStation(this.call, this.grid, this.freq, this.snr, this.cqProbability);
-  final String call;
-  final String grid;
-  final double freq;
-  final double snr;
-  final double cqProbability;
-}
+import 'sim_script.dart';
 
 /// Rádio simulado: gera áudio com ruído e sinais FT8/FT4 reais (codificados com a ft8_lib),
 /// responde às chamadas do usuário e permite testar toda a interface sem um rádio.
@@ -53,19 +44,15 @@ class SimRadio implements RadioLink {
   int _lastEmitUs = 0;
   int _slotIdx = -1;
   Float32List? _slotBuf; // 12 kHz
-  final List<String> _pendingReplies = [];
-  double _replyFreq = 1500;
 
-  final List<_SimStation> _stations = [
-    _SimStation('PY2SIM', 'GG66', 612, 4, 0.5),
-    _SimStation('K1ABC', 'FN42', 944, -3, 0.8),
-    _SimStation('EA3XYZ', 'JN11', 1210, -9, 0.6),
-    _SimStation('JA1DEF', 'PM95', 1732, -14, 0.5),
-    _SimStation('LU5GHI', 'GF05', 2105, -6, 0.7),
-    _SimStation('DL2JKL', 'JO62', 2480, -17, 0.4),
-    _SimStation('ZS6MNO', 'KG44', 2760, -21, 0.3),
-    _SimStation('VK3PQR', 'QF22', 372, -12, 0.3),
-  ];
+  /// Respostas das estações ao usuário, a transmitir no **próximo** período (veja [simReplyTo]).
+  final List<SimReply> _pendingReplies = [];
+
+  /// Rodízio de qual estação responde quando o usuário chama CQ.
+  int _cqCounter = 0;
+
+  /// Quantas respostas o simulador já enviou ao usuário (para a interface/testes).
+  int repliesSent = 0;
 
   @override
   LinkStatus get status => _status;
@@ -167,39 +154,20 @@ class SimRadio implements RadioLink {
   void sendTxAudio(Int16List pcm) {}
 
   String? _lastTxText;
-  double? _lastTxFreq;
 
   /// O motor informa o que foi transmitido, para a estação simulada responder no próximo slot.
   void heardTransmission(String text, double freq) {
     _lastTxText = text;
-    _lastTxFreq = freq;
   }
 
   void _flushTxToReply() {
     final t = _lastTxText;
     if (t == null) return;
     _lastTxText = null;
-    final me = myCall();
-    final tok = t.split(' ');
-    String? reply;
-    if (tok.first == 'CQ') {
-      reply = '$me PY2SIM GG66';
-    } else if (tok.length >= 3 && tok[1] == me) {
-      final dx = tok[0];
-      final last = tok[2];
-      if (dx == 'PY2SIM') {
-        if (RegExp(r'^[A-R]{2}\d{2}$').hasMatch(last) && last != 'RR73') {
-          reply = '$me PY2SIM -08';
-        } else if (RegExp(r'^[+-]\d{2}$').hasMatch(last)) {
-          reply = '$me PY2SIM R-09';
-        } else if (RegExp(r'^R[+-]\d{2}$').hasMatch(last)) {
-          reply = '$me PY2SIM RR73';
-        }
-      }
-    }
+    final reply = simReplyTo(t, myCall(), cqCounter: _cqCounter);
     if (reply != null) {
+      if (t.trim().toUpperCase().startsWith('CQ')) _cqCounter++;
       _pendingReplies.add(reply);
-      _replyFreq = _lastTxFreq ?? 1500;
     }
   }
 
@@ -220,28 +188,35 @@ class SimRadio implements RadioLink {
       }
     }
 
-    final me = myCall();
-    // Respostas ao usuário (prioridade)
+    // 1) Respostas ao usuário (prioridade): a estação responde na SUA frequência, com sinal forte
+    //    o bastante para ser sempre decodificado (o objetivo é ensinar o fluxo do QSO).
+    final replying = <String>{};
     for (final r in _pendingReplies) {
-      mix(r, _replyFreq, -5);
+      mix(r.text, r.station.freq, max(r.station.snr, -8));
+      replying.add(r.station.call);
+      repliesSent++;
     }
     _pendingReplies.clear();
-    for (final s in _stations) {
-      if (_rnd.nextDouble() > 0.75) continue;
+
+    // 2) Estações de fundo: as "alwaysCq" chamam CQ em todo período; as demais conversam
+    //    aleatoriamente entre si. Quem está respondendo ao usuário não transmite outra coisa.
+    for (final s in kSimStations) {
+      if (replying.contains(s.call)) continue;
       final String text;
-      if (_rnd.nextDouble() < s.cqProbability) {
+      if (s.alwaysCq) {
         text = 'CQ ${s.call} ${s.grid}';
       } else {
-        final other = _stations[_rnd.nextInt(_stations.length)];
-        if (other.call == s.call) continue;
-        final rpt = ['-10', '-05', '+02', 'R-12', 'RR73', '73'][_rnd.nextInt(6)];
-        text = '${other.call} ${s.call} $rpt';
+        if (_rnd.nextDouble() > 0.6) continue;
+        if (_rnd.nextDouble() < 0.4) {
+          text = 'CQ ${s.call} ${s.grid}';
+        } else {
+          final other = kSimStations[_rnd.nextInt(kSimStations.length)];
+          if (other.call == s.call) continue;
+          final rpt = ['-10', '-05', '+02', 'R-12', 'RR73', '73'][_rnd.nextInt(6)];
+          text = '${other.call} ${s.call} $rpt';
+        }
       }
-      mix(text, s.freq, s.snr + (_rnd.nextDouble() - 0.5) * 4);
-    }
-    // de vez em quando alguém chama o usuário
-    if (me.isNotEmpty && _rnd.nextDouble() < 0.12) {
-      mix('$me VK3PQR QF22', 372, -12);
+      mix(text, s.freq, s.snr + (_rnd.nextDouble() - 0.5) * 3);
     }
     return buf;
   }

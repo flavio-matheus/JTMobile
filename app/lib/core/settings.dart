@@ -68,6 +68,18 @@ class Settings extends ChangeNotifier {
   /// Avanço do envio do áudio de TX (ms) para compensar o atraso do enlace; ajuste fino por DT.
   int txAdvanceMs = 0;
 
+  /// Som nos alertas (início de TX, resposta de estação, QSO completo).
+  bool alertSound = true;
+
+  /// Vibração nos alertas.
+  bool alertVibrate = true;
+
+  /// Tocar em "responder" (↩) já habilita o TX (como o duplo clique do WSJT-X/JTDX).
+  bool replyEnablesTx = true;
+
+  /// O tutorial de boas-vindas já foi exibido.
+  bool tutorialSeen = false;
+
   /// Modo digital ativo.
   ModeSpec get mode => modeById(modeId);
 
@@ -87,6 +99,10 @@ class Settings extends ChangeNotifier {
     syncPolicy = SyncPolicy.values[(p.getInt('syncPolicy') ?? 0).clamp(0, SyncPolicy.values.length - 1)];
     autoFixMode = p.getBool('autoFixMode') ?? autoFixMode;
     autoLog = p.getBool('autoLog') ?? autoLog;
+    alertSound = p.getBool('alertSound') ?? alertSound;
+    alertVibrate = p.getBool('alertVibrate') ?? alertVibrate;
+    replyEnablesTx = p.getBool('replyEnablesTx') ?? replyEnablesTx;
+    tutorialSeen = p.getBool('tutorialSeen') ?? tutorialSeen;
     txBufferMs = p.getInt('txBufferMs') ?? txBufferMs;
     txAdvanceMs = p.getInt('txAdvanceMs') ?? txAdvanceMs;
     bandIndex = p.getInt('bandIndex') ?? bandIndex;
@@ -118,6 +134,10 @@ class Settings extends ChangeNotifier {
     await p.setInt('syncPolicy', syncPolicy.index);
     await p.setBool('autoFixMode', autoFixMode);
     await p.setBool('autoLog', autoLog);
+    await p.setBool('alertSound', alertSound);
+    await p.setBool('alertVibrate', alertVibrate);
+    await p.setBool('replyEnablesTx', replyEnablesTx);
+    await p.setBool('tutorialSeen', tutorialSeen);
     await p.setInt('txBufferMs', txBufferMs);
     await p.setInt('txAdvanceMs', txAdvanceMs);
     await p.setInt('bandIndex', bandIndex);

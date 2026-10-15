@@ -134,7 +134,7 @@ void main() {
       expect(q.currentMessage, 'K1ABC PY2XYZ RR73');
       // 73 final
       ev = q.onDecode(dec('PY2XYZ K1ABC 73', snr: -9), slotParity: 1);
-      expect(ev, QsoEvent.complete);
+      expect(ev, QsoEvent.finished);
     });
 
     test('ignora mensagens de outras estações durante o QSO', () {

@@ -6,8 +6,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../core/settings.dart';
+import '../engine/alerts.dart';
 import '../engine/engine.dart';
 import '../engine/radio_sync.dart';
+import 'guidance.dart';
 import 'theme.dart';
 
 const MethodChannel _net = MethodChannel('br.poinsp.ft_mobile/net');
@@ -168,6 +170,51 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             _slider('Compensação do relógio', s.clockOffsetMs.toDouble(), -1500, 1500, (v) => setState(() => s.clockOffsetMs = v.round()),
                 '${s.clockOffsetMs} ms'),
+            _section('Alertas e guia'),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Som nos alertas'),
+              subtitle: const Text('Bip ao transmitir, acorde quando uma estação responde, arpejo ao completar o QSO. Usa o volume de MÍDIA.',
+                  style: TextStyle(fontSize: 11)),
+              value: s.alertSound,
+              onChanged: (v) => setState(() => s.alertSound = v),
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Vibração nos alertas'),
+              value: s.alertVibrate,
+              onChanged: (v) => setState(() => s.alertVibrate = v),
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Responder (↩) já arma o TX'),
+              subtitle: const Text('Como o duplo clique do WSJT-X/JTDX: o app já começa a chamar no próximo período',
+                  style: TextStyle(fontSize: 11)),
+              value: s.replyEnablesTx,
+              onChanged: (v) => setState(() => s.replyEnablesTx = v),
+            ),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.volume_up),
+                    label: const Text('Testar alertas'),
+                    onPressed: () {
+                      _commit();
+                      widget.engine.alerts.show(AlertKind.reply, 'Teste: estação respondeu!', 'PY2XYZ K1ABC -08');
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.school),
+                    label: const Text('Ver tutorial'),
+                    onPressed: () => showTutorial(context, simulator: s.radioKind == RadioKind.simulator),
+                  ),
+                ),
+              ],
+            ),
             _section('Sincronização com o rádio'),
             DropdownButtonFormField<SyncPolicy>(
               initialValue: s.syncPolicy,

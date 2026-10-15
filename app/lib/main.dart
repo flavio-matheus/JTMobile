@@ -15,6 +15,7 @@ import 'core/ftx_native.dart';
 import 'engine/debug_wav.dart';
 import 'core/settings.dart';
 import 'engine/engine.dart';
+import 'ui/guidance.dart';
 import 'ui/home_page.dart';
 import 'ui/theme.dart';
 
@@ -80,8 +81,15 @@ class _GateState extends State<_Gate> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (widget.engine.settings.callsign.isEmpty && mounted) _askCall();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (widget.engine.settings.callsign.isEmpty && mounted) await _askCall();
+      // Tutorial "Seu primeiro QSO" na primeira execução (pode ser reaberto pelo ícone "?")
+      final s = widget.engine.settings;
+      if (!s.tutorialSeen && mounted) {
+        await showTutorial(context, simulator: s.radioKind == RadioKind.simulator);
+        s.tutorialSeen = true;
+        s.save();
+      }
     });
   }
 

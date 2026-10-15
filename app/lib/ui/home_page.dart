@@ -5,6 +5,7 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../core/settings.dart';
 import '../engine/engine.dart';
 import 'activity_list.dart';
 import 'log_page.dart';
@@ -12,6 +13,7 @@ import 'qso_panel.dart';
 import 'radio_sheet.dart';
 import 'settings_page.dart';
 import 'station_sheet.dart';
+import 'guidance.dart';
 import 'status_header.dart';
 import 'theme.dart';
 import 'waterfall_view.dart';
@@ -68,7 +70,13 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
 
   @override
   Widget build(BuildContext context) {
-    final header = StatusHeader(engine: e, onSettings: _openSettings, onRadio: () => showRadioSheet(context, e));
+    final header = StatusHeader(
+      engine: e,
+      onSettings: _openSettings,
+      onRadio: () => showRadioSheet(context, e),
+      onHelp: () => showTutorial(context, simulator: e.settings.radioKind == RadioKind.simulator),
+    );
+    final coach = CoachBanner(engine: e);
     final wf = WaterfallView(
       engine: e,
       onDecodeTap: (d) => showStationSheet(context, e, d),
@@ -101,28 +109,40 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
 
     return Scaffold(
       body: SafeArea(
-        child: OrientationBuilder(
+        child: Stack(
+          children: [
+            _layout(header, coach, wf, lists, actions),
+            Positioned.fill(child: AlertFlash(alerts: e.alerts)),
+            Positioned(top: 0, left: 0, right: 0, child: AlertBanner(alerts: e.alerts)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Organiza os blocos da tela em retrato (coluna) ou paisagem (duas colunas).
+  Widget _layout(Widget header, Widget coach, Widget wf, Widget lists, Widget actions) {
+    return OrientationBuilder(
           builder: (context, o) {
             if (o == Orientation.landscape) {
               return Row(
                 children: [
                   Expanded(flex: 5, child: Column(children: [header, Expanded(child: wf)])),
                   const VerticalDivider(width: 1),
-                  Expanded(flex: 4, child: Column(children: [Expanded(child: lists), actions])),
+                  Expanded(flex: 4, child: Column(children: [coach, Expanded(child: lists), actions])),
                 ],
               );
             }
             return Column(
               children: [
                 header,
+                coach,
                 Expanded(flex: 5, child: wf),
                 Expanded(flex: 6, child: lists),
                 actions,
               ],
             );
           },
-        ),
-      ),
     );
   }
 }

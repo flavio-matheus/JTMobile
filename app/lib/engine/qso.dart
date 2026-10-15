@@ -13,7 +13,12 @@ String formatReport(double snr) {
   return '${n < 0 ? '-' : '+'}${n.abs().toString().padLeft(2, '0')}';
 }
 
-enum QsoEvent { none, complete }
+/// Resultado de processar uma mensagem recebida.
+///  * [none]: o QSO continua (a próxima mensagem a transmitir pode ter mudado);
+///  * [complete]: recebemos RR73/RRR — o QSO está **completo para registro**, mas ainda devemos
+///    transmitir o 73 final (Tx5);
+///  * [finished]: recebemos 73 — o QSO terminou e **não há mais nada a transmitir**.
+enum QsoEvent { none, complete, finished }
 
 /// Sequenciador de QSO no estilo WSJT-X/JTDX (mensagens Tx1..Tx6 e auto-sequência).
 class QsoManager {
@@ -114,9 +119,9 @@ class QsoManager {
   QsoEvent _advance(Decode d) {
     final p = d.parsed;
     if (p.is73) {
-      txIndex = 5;
+      // A outra estação encerrou: registra e não responde (evita "73" duplicado).
       completed = true;
-      return QsoEvent.complete;
+      return QsoEvent.finished;
     }
     if (p.rr73 || p.rrr) {
       txIndex = 5;

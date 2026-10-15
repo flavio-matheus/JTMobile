@@ -37,6 +37,7 @@ import '../logbook/qso_log.dart';
 import '../logbook/qso_record.dart';
 import '../radio/icom_link.dart';
 import '../radio/radio_link.dart';
+import 'alerts.dart';
 import 'audio_timeline.dart';
 import 'qso.dart';
 import 'radio_sync.dart';
@@ -44,12 +45,22 @@ import 'sim_radio.dart';
 import 'waterfall.dart';
 
 class Engine extends ChangeNotifier {
-  Engine({required this.settings, required this.codec, DateTime Function()? clock, QsoLog? log})
-      : _clockFn = clock ?? DateTime.now,
-        qsoLog = log ?? QsoLog() {
+  Engine({
+    required this.settings,
+    required this.codec,
+    DateTime Function()? clock,
+    QsoLog? log,
+    AlertCenter? alerts,
+  })  : _clockFn = clock ?? DateTime.now,
+        qsoLog = log ?? QsoLog(),
+        alerts = alerts ?? AlertCenter() {
     qso = QsoManager(myCall: settings.callsign, myGrid: settings.grid, cqText: settings.customCq);
     settings.addListener(_onSettings);
+    _onSettings();
   }
+
+  /// Alertas visuais/sonoros ao operador (início de TX, resposta de estação, QSO completo).
+  final AlertCenter alerts;
 
   /// Configurações persistentes.
   final Settings settings;
@@ -182,6 +193,32 @@ class Engine extends ChangeNotifier {
     qso.myCall = settings.callsign;
     qso.myGrid = settings.grid;
     qso.cqText = settings.customCq;
+    alerts.soundEnabled = settings.alertSound;
+    alerts.vibrateEnabled = settings.alertVibrate;
+  }
+
+  // ------------------------------------------------------------------ guia de operação
+
+  /// Indicativo e instante do último QSO concluído (para o guia na tela).
+  String? lastQsoCall;
+  DateTime? lastQsoAt;
+
+  /// Última mensagem recebida **dirigida a mim** (resposta de estação) e quando.
+  String? lastReplyText;
+  DateTime? lastReplyAt;
+
+  /// Quantas vezes já transmitimos nesta chamada/QSO (reinicia ao habilitar o TX).
+  int get txAttempts => _txCount;
+
+  /// Segundos até o início do próximo período de TX configurado ([txParity]); 0 se estamos nele.
+  double secondsUntilTxSlot() {
+    final t = now();
+    final idx = slotIndexAt(t);
+    var target = idx;
+    if (target % 2 != txParity) target++;
+    final startMs = slotStartOf(target).millisecondsSinceEpoch;
+    final d = (startMs - t.millisecondsSinceEpoch) / 1000.0;
+    return d < 0 ? 0 : d;
   }
 
   // ================================================================== conexão com o rádio
@@ -471,6 +508,15 @@ class Engine extends ChangeNotifier {
       setRxFreq(d.freq.round());
       if (!settings.holdTxFreq) settings.txFreq = d.freq.round();
       settings.save();
+      // Como o duplo clique do WSJT-X/JTDX: responder já arma a transmissão.
+      final dx = qso.dxCall;
+      if (settings.replyEnablesTx) setTxEnabled(true);
+      if (txEnabled) {
+        alerts.show(AlertKind.info, 'Respondendo a $dx',
+            'TX armado para o ${txParity == 0 ? '1º' : '2º'} período — começa em ${secondsUntilTxSlot().ceil()} s.');
+      } else if (lastError == null) {
+        alerts.show(AlertKind.info, '$dx selecionada', 'Toque em "Ativar TX" para chamar.');
+      }
     }
     notifyListeners();
   }
@@ -674,6 +720,15 @@ class Engine extends ChangeNotifier {
     if (decodes.length > 800) decodes.removeRange(0, decodes.length - 800);
     decodesLastSlot = fresh.length;
 
+    // Alerta: alguém me respondeu/chamou neste slot
+    final toMe = fresh.where((d) => d.toMe).toList();
+    if (toMe.isNotEmpty) {
+      final d = toMe.first;
+      lastReplyText = d.message;
+      lastReplyAt = now();
+      alerts.show(AlertKind.reply, '${d.senderCall ?? 'Estação'} respondeu!', '${d.message}   (${d.snr.round()} dB)');
+    }
+
     // auto-sequência: só reage à primeira mensagem dirigida a mim neste slot
     if (settings.autoSeq) {
       for (final d in fresh) {
@@ -683,7 +738,13 @@ class Engine extends ChangeNotifier {
         if (!settings.holdTxFreq && qso.dxCall.isNotEmpty) {
           settings.txFreq = d.freq.round(); // transmite na frequência do correspondente
         }
-        if (ev == QsoEvent.complete) _finishQso();
+        if (ev == QsoEvent.complete) {
+          _finishQso(); // registra; o 73 final (Tx5) ainda será transmitido
+        } else if (ev == QsoEvent.finished) {
+          _finishQso();
+          txEnabled = false; // a outra estação encerrou com 73: nada mais a transmitir
+          qso.clear();
+        }
         break;
       }
     }
@@ -737,6 +798,10 @@ class Engine extends ChangeNotifier {
   void _finishQso() {
     if (qso.dxCall.isEmpty) return;
     final draft = _draftFromQso();
+    lastQsoCall = qso.dxCall;
+    lastQsoAt = now();
+    alerts.show(AlertKind.qsoComplete, 'QSO completo com ${qso.dxCall}!',
+        settings.autoLog ? 'Registrado no logbook.' : 'Confirme o registro no logbook.');
     if (settings.autoLog) {
       commitLog(draft);
     } else {
@@ -802,6 +867,7 @@ class Engine extends ChangeNotifier {
     txMessageShown = text;
     _txCount++;
     txLog.add('${_hhmmss(now())}  TX ${settings.txFreq} Hz  $text');
+    alerts.show(AlertKind.txStart, 'Transmitindo', '$text  ·  ${settings.txFreq} Hz');
     if (r is SimRadio) r.heardTransmission(text, settings.txFreq.toDouble());
     r.setPtt(true);
     _txTimer?.cancel();

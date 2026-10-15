@@ -19,7 +19,16 @@ String _fmtFreq(int hz) {
 }
 
 class StatusHeader extends StatelessWidget {
-  const StatusHeader({super.key, required this.engine, required this.onSettings, required this.onRadio});
+  const StatusHeader({
+    super.key,
+    required this.engine,
+    required this.onSettings,
+    required this.onRadio,
+    required this.onHelp,
+  });
+
+  /// Abre o tutorial "Seu primeiro QSO".
+  final VoidCallback onHelp;
   final Engine engine;
 
   /// Abre as configurações do app.
@@ -45,11 +54,38 @@ class StatusHeader extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  _ConnPill(engine: engine),
-                  const Spacer(),
-                  _ClockText(engine: engine),
+                  // A linha tem de caber em telas estreitas (360 dp): selo e relógio se adaptam ao espaço.
+                  Expanded(flex: 3, child: Align(alignment: Alignment.centerLeft, child: _ConnPill(engine: engine))),
+                  Expanded(
+                    flex: 2,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerRight,
+                      child: _ClockText(engine: engine),
+                    ),
+                  ),
+                  // Som dos alertas liga/desliga (a vibração fica nas configurações)
                   IconButton(
                     visualDensity: VisualDensity.compact,
+                    style: IconButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(36, 36), tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                    tooltip: engine.settings.alertSound ? 'Som dos alertas: ligado' : 'Som dos alertas: desligado',
+                    onPressed: () {
+                      engine.settings.alertSound = !engine.settings.alertSound;
+                      engine.settings.save();
+                    },
+                    icon: Icon(engine.settings.alertSound ? Icons.volume_up : Icons.volume_off,
+                        size: 22, color: engine.settings.alertSound ? Pal.text : Pal.dim),
+                  ),
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    style: IconButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(36, 36), tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                    onPressed: onHelp,
+                    icon: const Icon(Icons.help_outline, size: 22),
+                    tooltip: 'Como fazer um QSO',
+                  ),
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    style: IconButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(36, 36), tapTargetSize: MaterialTapTargetSize.shrinkWrap),
                     onPressed: onSettings,
                     icon: const Icon(Icons.settings, size: 22),
                     tooltip: 'Configurações',

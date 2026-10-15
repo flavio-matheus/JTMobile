@@ -139,7 +139,7 @@ class _LogPageState extends State<LogPage> {
           ],
         ),
         subtitle: Text(
-          '${r.timeOn.year}-${two(r.timeOn.month)}-${two(r.timeOn.day)} ${hhmmss(r.timeOn)} UTC · ${(r.freqHz / 1e6).toStringAsFixed(3)} MHz'
+          '${r.timeOn.year}-${two(r.timeOn.month)}-${two(r.timeOn.day)} ${two(r.timeOn.hour)}:${two(r.timeOn.minute)}:${two(r.timeOn.second)} UTC · ${(r.freqHz / 1e6).toStringAsFixed(3)} MHz'
           '${country != null ? ' · ${country.country}' : ''}\n'
           'Env ${r.rstSent.isEmpty ? '—' : r.rstSent}  Rec ${r.rstRcvd.isEmpty ? '—' : r.rstRcvd}'
           '${r.grid.isNotEmpty ? '  ${r.grid}' : ''}${r.name.isNotEmpty ? '  ${r.name}' : ''}',
