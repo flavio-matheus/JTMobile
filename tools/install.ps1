@@ -10,7 +10,7 @@
   Caminho do APK. Padrão: dist\JTMobile-arm64-v8a.apk (arm64 = celulares atuais).
 
 .PARAMETER Serial
-  Número de série do aparelho (opcional, quando há mais de um conectado). Veja "adb devices".
+  Número de série do aparelho. Padrão: RXCW200QKJX. Use -Serial "" para escolher automaticamente o único aparelho conectado.
 
 .PARAMETER Launch
   Abre o app depois de instalar.
@@ -20,7 +20,7 @@
 #>
 param(
     [string]$Apk = (Join-Path $PSScriptRoot "..\dist\JTMobile-arm64-v8a.apk"),
-    [string]$Serial = "",
+    [string]$Serial = "RXCW200QKJX",   # aparelho padrão do projeto (use -Serial "" para escolher automaticamente)
     [switch]$Launch
 )
 
