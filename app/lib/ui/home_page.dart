@@ -1,9 +1,15 @@
+/// Tela principal: cabeçalho, waterfall, abas (Atividade / Meu QSO) e barra de ações (TX, HALT,
+/// TUNE, Log). Em paisagem organiza waterfall e listas lado a lado. Abre o diálogo de registro de
+/// QSO quando o motor conclui um contato.
+library;
+
 import 'package:flutter/material.dart';
 
 import '../engine/engine.dart';
 import 'activity_list.dart';
 import 'log_page.dart';
 import 'qso_panel.dart';
+import 'radio_sheet.dart';
 import 'settings_page.dart';
 import 'station_sheet.dart';
 import 'status_header.dart';
@@ -23,8 +29,31 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
 
   Engine get e => widget.engine;
 
+  bool _logDialogOpen = false;
+
+  @override
+  void initState() {
+    super.initState();
+    e.pendingLog.addListener(_onPendingLog);
+  }
+
+  /// Abre o formulário de confirmação quando o motor conclui um QSO (ou o usuário pede para registrar).
+  Future<void> _onPendingLog() async {
+    final draft = e.pendingLog.value;
+    if (draft == null || _logDialogOpen || !mounted) return;
+    _logDialogOpen = true;
+    final res = await showLogQsoDialog(context, draft);
+    _logDialogOpen = false;
+    if (res != null) {
+      await e.commitLog(res);
+    } else {
+      e.discardPendingLog();
+    }
+  }
+
   @override
   void dispose() {
+    e.pendingLog.removeListener(_onPendingLog);
     _tabs.dispose();
     super.dispose();
   }
@@ -39,7 +68,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
 
   @override
   Widget build(BuildContext context) {
-    final header = StatusHeader(engine: e, onSettings: _openSettings);
+    final header = StatusHeader(engine: e, onSettings: _openSettings, onRadio: () => showRadioSheet(context, e));
     final wf = WaterfallView(
       engine: e,
       onDecodeTap: (d) => showStationSheet(context, e, d),

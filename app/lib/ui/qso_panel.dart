@@ -1,3 +1,7 @@
+/// Painel do QSO: estação em contato (indicativo, grid, país, distância, relatórios), mensagens
+/// Tx1..Tx6, escolha do período de TX, auto-sequência e ações (CQ, registrar, limpar).
+library;
+
 import 'package:flutter/material.dart';
 
 import '../core/dxcc.dart';

@@ -1,5 +1,5 @@
-name: ft_mobile
-description: "A new Flutter project."
+name: jtmobile
+description: "JTMobile: modos digitais de HF (FT8/FT4) no Android com o Icom IC-705 via Wi-Fi."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev

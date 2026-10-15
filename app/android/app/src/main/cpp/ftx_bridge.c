@@ -387,10 +387,13 @@ FTX_EXPORT int ftx_spectrum(const float* samples, int nfft, float* out_db)
 
 #define DEC_TAPS 64
 
+// Estado do decimador. `hist` é um buffer circular "escrito duas vezes" (posição i e i+DEC_TAPS),
+// o que permite ler sempre uma janela contígua de DEC_TAPS amostras sem mover memória.
 typedef struct
 {
-    float hist[DEC_TAPS];
-    int phase;
+    float hist[2 * DEC_TAPS];
+    int pos;   // próxima posição de escrita (0..DEC_TAPS-1)
+    int phase; // contador 0..3 para decimar por 4
 } Dec4State;
 
 static float g_dec_coef[DEC_TAPS];
@@ -433,14 +436,18 @@ FTX_EXPORT int ftx_dec4(void* state, const int16_t* in, int n, float* out)
     int nout = 0;
     for (int i = 0; i < n; ++i)
     {
-        memmove(s->hist, s->hist + 1, sizeof(float) * (DEC_TAPS - 1));
-        s->hist[DEC_TAPS - 1] = in[i] / 32768.0f;
+        const float x = in[i] / 32768.0f;
+        s->hist[s->pos] = x;
+        s->hist[s->pos + DEC_TAPS] = x;
+        s->pos = (s->pos + 1) % DEC_TAPS;
         if (++s->phase == 4)
         {
             s->phase = 0;
+            // janela contígua: da amostra mais antiga (hist[pos]) até a mais nova
+            const float* w = s->hist + s->pos;
             float acc = 0;
             for (int k = 0; k < DEC_TAPS; ++k)
-                acc += s->hist[k] * g_dec_coef[DEC_TAPS - 1 - k];
+                acc += w[k] * g_dec_coef[DEC_TAPS - 1 - k];
             out[nout++] = acc;
         }
     }

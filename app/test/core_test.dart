@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ft_mobile/core/dxcc.dart';
-import 'package:ft_mobile/core/geo.dart';
-import 'package:ft_mobile/core/models.dart';
-import 'package:ft_mobile/engine/qso.dart';
-import 'package:ft_mobile/radio/civ.dart';
-import 'package:ft_mobile/radio/passcode.dart';
+import 'package:jtmobile/core/dxcc.dart';
+import 'package:jtmobile/core/geo.dart';
+import 'package:jtmobile/core/models.dart';
+import 'package:jtmobile/engine/qso.dart';
+import 'package:jtmobile/radio/civ.dart';
+import 'package:jtmobile/radio/passcode.dart';
 
 Decode dec(String msg, {double snr = -10, DateTime? t, String my = 'PY2XYZ', String grid = 'GG66'}) => Decode(
       slotStart: t ?? DateTime.utc(2026, 1, 1, 12, 0, 0),

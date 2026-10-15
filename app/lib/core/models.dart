@@ -1,3 +1,12 @@
+/// Modelos de mensagens FT8/FT4: interpretação do texto ([ParsedMessage]) e uma decodificação
+/// completa com dados da estação ([Decode]): país, distância, azimute, se é CQ ou dirigida a mim.
+///
+/// Regras de interpretação (formato padrão do FT8/FT4):
+///  * `CQ [DX|POTA|...] INDICATIVO GRID`  — chamada geral;
+///  * `DESTINO ORIGEM {GRID | -12 | R-12 | RRR | RR73 | 73}` — troca de QSO;
+///  * qualquer outra coisa é tratada como texto livre.
+library;
+
 import 'dxcc.dart';
 import 'geo.dart';
 
@@ -116,26 +125,3 @@ class Decode {
   bool get fromMe => myCall.isNotEmpty && parsed.from != null && baseCall(parsed.from!) == baseCall(myCall);
   String? get senderCall => parsed.from;
 }
-
-/// Banda de operação com as frequências de dial usuais.
-class Band {
-  const Band(this.name, this.ft8, this.ft4);
-  final String name;
-  final int ft8;
-  final int ft4;
-}
-
-const List<Band> kBands = [
-  Band('160m', 1840000, 1840000),
-  Band('80m', 3573000, 3575000),
-  Band('60m', 5357000, 5357000),
-  Band('40m', 7074000, 7047500),
-  Band('30m', 10136000, 10140000),
-  Band('20m', 14074000, 14080000),
-  Band('17m', 18100000, 18104000),
-  Band('15m', 21074000, 21140000),
-  Band('12m', 24915000, 24919000),
-  Band('10m', 28074000, 28180000),
-  Band('6m', 50313000, 50318000),
-];
-

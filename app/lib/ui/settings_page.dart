@@ -1,8 +1,13 @@
+/// Tela de configurações: estação, conexão com o rádio, sincronização, áudio/temporização, logbook
+/// e waterfall. Também fornece [bindToWifi] (fixa o app ao Wi-Fi do rádio, via código nativo).
+library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../core/settings.dart';
 import '../engine/engine.dart';
+import '../engine/radio_sync.dart';
 import 'theme.dart';
 
 const MethodChannel _net = MethodChannel('br.poinsp.ft_mobile/net');
@@ -59,7 +64,7 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      onPopInvokedWithResult: (_, __) => _commit(),
+      onPopInvokedWithResult: (_, _) => _commit(),
       child: Scaffold(
         appBar: AppBar(title: const Text('Configurações')),
         body: ListView(
@@ -163,6 +168,54 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             _slider('Compensação do relógio', s.clockOffsetMs.toDouble(), -1500, 1500, (v) => setState(() => s.clockOffsetMs = v.round()),
                 '${s.clockOffsetMs} ms'),
+            _section('Sincronização com o rádio'),
+            DropdownButtonFormField<SyncPolicy>(
+              initialValue: s.syncPolicy,
+              decoration: const InputDecoration(labelText: 'Ao conectar, quem manda?', border: OutlineInputBorder()),
+              items: const [
+                DropdownMenuItem(value: SyncPolicy.radioFirst, child: Text('O rádio (app adota frequência/banda do rádio)')),
+                DropdownMenuItem(value: SyncPolicy.appFirst, child: Text('O app (envia a banda escolhida ao rádio)')),
+              ],
+              onChanged: (v) => setState(() => s.syncPolicy = v ?? s.syncPolicy),
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Corrigir modo para USB-D automaticamente'),
+              subtitle: const Text('FT8/FT4 exigem USB com DATA ligado', style: TextStyle(fontSize: 11)),
+              value: s.autoFixMode,
+              onChanged: (v) => setState(() => s.autoFixMode = v),
+            ),
+            _section('Áudio e temporização'),
+            _slider('Buffer de áudio de TX no rádio', s.txBufferMs.toDouble(), 50, 400, (v) => setState(() => s.txBufferMs = v.round()),
+                '${s.txBufferMs} ms'),
+            const Text(
+              'Menor = menos atraso na transmissão, porém mais sensível a oscilações da rede. Reconecte para aplicar.',
+              style: TextStyle(color: Pal.dim, fontSize: 11),
+            ),
+            _slider('Avanço do áudio de TX', s.txAdvanceMs.toDouble(), -300, 500, (v) => setState(() => s.txAdvanceMs = v.round()),
+                '${s.txAdvanceMs} ms'),
+            const Text(
+              'Ajuste fino se os outros operadores reportarem seu DT diferente de 0 (valor positivo = envia mais cedo).',
+              style: TextStyle(color: Pal.dim, fontSize: 11),
+            ),
+            _slider('Compensação de latência de RX', s.rxLatencyMs.toDouble(), -200, 400, (v) => setState(() => s.rxLatencyMs = v.round()),
+                '${s.rxLatencyMs} ms'),
+            const SizedBox(height: 8),
+            _DtCard(engine: widget.engine, onChanged: () => setState(() {})),
+            _section('Logbook'),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Registrar QSO sem perguntar'),
+              subtitle: const Text('Grava automaticamente ao concluir o contato (sem o diálogo de confirmação)',
+                  style: TextStyle(fontSize: 11)),
+              value: s.autoLog,
+              onChanged: (v) => setState(() => s.autoLog = v),
+            ),
+            const Text(
+              'Integrações com LoTW, QRZ.com, eQSL e Club Log: em desenvolvimento (fase 2). '
+              'Por ora use Logbook → Exportar ADIF.',
+              style: TextStyle(color: Pal.dim, fontSize: 11),
+            ),
             _section('Waterfall'),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
@@ -222,4 +275,48 @@ class _HelpCard extends StatelessWidget {
           style: TextStyle(fontSize: 12, color: Pal.dim, height: 1.4),
         ),
       );
+}
+
+/// Mostra o DT mediano das últimas decodificações e permite calibrar o relógio por ele.
+///
+/// O DT (diferença de tempo) das mensagens recebidas deve ficar perto de 0 s. Um valor médio
+/// persistentemente positivo/negativo indica que o relógio do celular está adiantado/atrasado.
+class _DtCard extends StatelessWidget {
+  const _DtCard({required this.engine, required this.onChanged});
+  final Engine engine;
+  final VoidCallback onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final dt = engine.dtMedianSeconds;
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(color: Pal.panel, borderRadius: BorderRadius.circular(10), border: Border.all(color: Pal.line)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            dt == null ? 'DT mediano: aguardando mais decodificações…' : 'DT mediano: ${dt >= 0 ? '+' : ''}${dt.toStringAsFixed(2)} s',
+            style: kMono.copyWith(fontSize: 15, fontWeight: FontWeight.w700),
+          ),
+          Text(
+            'Jitter do áudio: ${engine.audioJitterMs.toStringAsFixed(1)} ms · lacunas preenchidas: ${engine.audioGapsFilled}',
+            style: const TextStyle(color: Pal.dim, fontSize: 12),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: dt == null
+                ? null
+                : () {
+                    final adj = engine.calibrateClockFromDt();
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Relógio ajustado em ${adj ?? 0} ms')));
+                    onChanged();
+                  },
+            icon: const Icon(Icons.schedule),
+            label: const Text('Calibrar relógio pelo DT'),
+          ),
+        ],
+      ),
+    );
+  }
 }

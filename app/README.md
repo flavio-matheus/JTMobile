@@ -1,17 +1,13 @@
-# ft_mobile
+# app/ — projeto Flutter do JTMobile
 
-A new Flutter project.
+Este diretório contém o aplicativo Android (Flutter + código nativo C). A documentação do projeto está na
+raiz do repositório: [`../README.md`](../README.md) e [`../docs/`](../docs/).
 
-## Getting Started
+```powershell
+flutter pub get
+flutter analyze
+flutter test
+flutter build apk --release --split-per-abi
+```
 
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Para IAs/colaboradores: leia [`../AGENTS.md`](../AGENTS.md) e [`../docs/DESENVOLVIMENTO.md`](../docs/DESENVOLVIMENTO.md).

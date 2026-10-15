@@ -190,25 +190,46 @@ class FtxNative implements FtxCodec {
   Decimator newDecimator() => _NativeDecimator(this);
 }
 
+/// Decimador 48 kHz -> 12 kHz com buffers nativos **pré-alocados**.
+///
+/// Esta função roda ~50 vezes por segundo no caminho crítico do áudio de RX; evitar alocações
+/// nativas a cada pacote reduz *jitter* e pressão sobre o coletor de lixo.
 class _NativeDecimator implements Decimator {
-  _NativeDecimator(this._n) : _state = _n._dec4New();
+  _NativeDecimator(this._n)
+      : _state = _n._dec4New(),
+        _in = calloc<Int16>(_cap),
+        _out = calloc<Float>(_cap ~/ 4 + 8);
+
+  static const int _cap = 8192; // amostras de entrada por chamada nativa
   final FtxNative _n;
   final Pointer<Void> _state;
+  final Pointer<Int16> _in;
+  final Pointer<Float> _out;
 
   @override
   Float32List process(Int16List input) {
-    final inp = calloc<Int16>(input.length);
-    final out = calloc<Float>(input.length ~/ 4 + 4);
-    try {
-      inp.asTypedList(input.length).setAll(0, input);
-      final n = _n._dec4(_state, inp, input.length, out);
-      return Float32List.fromList(out.asTypedList(n));
-    } finally {
-      calloc.free(inp);
-      calloc.free(out);
+    final res = <Float32List>[];
+    for (var off = 0; off < input.length; off += _cap) {
+      final len = (input.length - off) < _cap ? input.length - off : _cap;
+      _in.asTypedList(len).setAll(0, Int16List.sublistView(input, off, off + len));
+      final n = _n._dec4(_state, _in, len, _out);
+      res.add(Float32List.fromList(_out.asTypedList(n)));
     }
+    if (res.length == 1) return res.first;
+    final total = res.fold<int>(0, (a, b) => a + b.length);
+    final all = Float32List(total);
+    var o = 0;
+    for (final r in res) {
+      all.setAll(o, r);
+      o += r.length;
+    }
+    return all;
   }
 
   @override
-  void dispose() => _n._dec4Free(_state);
+  void dispose() {
+    _n._dec4Free(_state);
+    calloc.free(_in);
+    calloc.free(_out);
+  }
 }

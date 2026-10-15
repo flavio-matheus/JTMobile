@@ -1,3 +1,10 @@
+/// Sequenciador de QSO no estilo WSJT-X/JTDX.
+///
+/// Mensagens: Tx1 (grid), Tx2 (relatório), Tx3 (R+relatório), Tx4 (RR73), Tx5 (73), Tx6 (CQ).
+/// Com a auto-sequência ligada, cada mensagem recebida da estação em contato faz o sequenciador
+/// avançar para a próxima mensagem a transmitir. É lógica pura, coberta por `test/core_test.dart`.
+library;
+
 import '../core/dxcc.dart';
 import '../core/models.dart';
 

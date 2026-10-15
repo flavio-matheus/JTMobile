@@ -5,9 +5,9 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ft_mobile/radio/civ.dart';
-import 'package:ft_mobile/radio/icom_link.dart';
-import 'package:ft_mobile/radio/radio_link.dart';
+import 'package:jtmobile/radio/civ.dart';
+import 'package:jtmobile/radio/icom_link.dart';
+import 'package:jtmobile/radio/radio_link.dart';
 
 Uint8List hdr(int len, int type, int seq, int radioSid, int clientSid) {
   final d = Uint8List(len);
@@ -129,6 +129,14 @@ class FakeRadio {
       data = [0xFE, 0xFE, 0xE0, 0xA4, 0x04, 0x01, 0x01, 0xFD];
     } else if (cmd == 0x15 && req[5] == 0x02) {
       data = [0xFE, 0xFE, 0xE0, 0xA4, 0x15, 0x02, 0x01, 0x20, 0xFD];
+    } else if (cmd == 0x1A && req[5] == 0x06) {
+      data = [0xFE, 0xFE, 0xE0, 0xA4, 0x1A, 0x06, 0x01, 0x01, 0xFD]; // DATA ligado, FIL1
+    } else if (cmd == 0x14 && req[5] == 0x0A) {
+      data = [0xFE, 0xFE, 0xE0, 0xA4, 0x14, 0x0A, 0x01, 0x28, 0xFD]; // potência 128
+    } else if (cmd == 0x16 && req[5] == 0x02) {
+      data = [0xFE, 0xFE, 0xE0, 0xA4, 0x16, 0x02, 0x01, 0xFD]; // pré-amp 1
+    } else if (cmd == 0x11) {
+      data = [0xFE, 0xFE, 0xE0, 0xA4, 0x11, 0x00, 0xFD]; // ATT desligado
     }
     if (data == null) return;
     final p = hdr(0x15 + data.length, 0, serialSeq++, sid, clientSid);
@@ -170,6 +178,12 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 800));
       expect(radio.state.freqHz, 14074000);
       expect(radio.state.mode, 1);
+      // leitura completa de ajustes do rádio (sincronização rádio -> app)
+      expect(radio.state.dataMode, isTrue);
+      expect(radio.state.isUsbData, isTrue);
+      expect(radio.state.rfPower, 128);
+      expect(radio.state.preamp, 1);
+      expect(radio.state.att, 0);
 
       // S-meter via polling
       await Future<void>.delayed(const Duration(milliseconds: 600));

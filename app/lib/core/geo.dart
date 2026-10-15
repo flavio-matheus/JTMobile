@@ -1,3 +1,9 @@
+/// Utilidades geográficas: locator Maidenhead, distância (grande círculo) e azimute.
+///
+/// Usadas para mostrar distância/azimute da estação decodificada a partir do grid informado na
+/// mensagem (ex.: "CQ K1ABC FN42") e do grid do operador.
+library;
+
 import 'dart:math';
 
 /// Localizador Maidenhead (4 ou 6 caracteres) -> centro (lat, lon) em graus. Null se inválido.

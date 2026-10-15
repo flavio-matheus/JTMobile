@@ -1,3 +1,10 @@
+/// Rádio simulado para desenvolvimento/testes sem hardware.
+///
+/// Gera áudio de 48 kHz com ruído branco e sinais FT8/FT4 **reais** (codificados com a mesma
+/// biblioteca nativa), alinhados ao relógio UTC, e responde às chamadas do usuário (estação
+/// "PY2SIM"), permitindo exercitar decodificação, QSO automático e TX de ponta a ponta.
+library;
+
 import 'dart:async';
 import 'dart:math';
 import 'dart:typed_data';
@@ -30,7 +37,11 @@ class SimRadio implements RadioLink {
   final RadioState state = RadioState()
     ..freqHz = 14074000
     ..mode = 1
-    ..dataMode = true;
+    ..filter = 1
+    ..dataMode = true
+    ..rfPower = 128
+    ..preamp = 0
+    ..att = 0;
 
   final _audio = StreamController<Int16List>.broadcast();
   final _changes = StreamController<void>.broadcast();
@@ -98,7 +109,58 @@ class SimRadio implements RadioLink {
   }
 
   @override
-  void setUsbData() {}
+  void setUsbData() {
+    state
+      ..mode = 1
+      ..dataMode = true;
+    _changes.add(null);
+  }
+
+  @override
+  void setMode(int mode, {int filter = 1}) {
+    state
+      ..mode = mode
+      ..filter = filter;
+    _changes.add(null);
+  }
+
+  @override
+  void setDataMode(bool on, {int filter = 1}) {
+    state.dataMode = on;
+    _changes.add(null);
+  }
+
+  @override
+  void setRfPower(int raw) {
+    state.rfPower = raw;
+    _changes.add(null);
+  }
+
+  @override
+  void setPreamp(int value) {
+    state.preamp = value;
+    _changes.add(null);
+  }
+
+  @override
+  void setAtt(int db) {
+    state.att = db;
+    _changes.add(null);
+  }
+
+  @override
+  void requestState() => _changes.add(null);
+
+  /// Simula uma alteração feita *no painel do rádio* (botão de sintonia, tecla MODE...),
+  /// para testar a sincronização rádio -> app sem hardware.
+  void radioSideChange({int? freqHz, int? mode, bool? data, int? rfPower}) {
+    if (freqHz != null) state.freqHz = freqHz;
+    if (mode != null) state.mode = mode;
+    if (data != null) state.dataMode = data;
+    if (rfPower != null) state.rfPower = rfPower;
+    _changes.add(null);
+  }
+
   @override
   void sendCiv(Uint8List frame) {}
   @override

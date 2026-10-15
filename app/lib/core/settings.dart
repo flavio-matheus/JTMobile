@@ -1,7 +1,14 @@
+/// Configurações persistentes do app (SharedPreferences): estação, rádio, modo/banda, TX, waterfall,
+/// sincronização com o rádio e logbook. Cada campo tem valor padrão seguro; [Settings.save] grava tudo
+/// e notifica os ouvintes. Em testes use [Settings.memory].
+library;
+
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../engine/radio_sync.dart';
 import 'ftx_native.dart';
+import 'modes.dart';
 
 enum RadioKind { icomWifi, simulator }
 
@@ -29,7 +36,8 @@ class Settings extends ChangeNotifier {
   String radioUser = '';
   String radioPass = '';
   RadioKind radioKind = RadioKind.simulator;
-  FtxProtocol protocol = FtxProtocol.ft8;
+  /// Id do modo digital ativo (veja [kModes]).
+  String modeId = 'FT8';
   int bandIndex = 5; // 20m
   int rxFreq = 1500;
   int txFreq = 1500;
@@ -45,6 +53,27 @@ class Settings extends ChangeNotifier {
   int rxLatencyMs = 0;
   String customCq = 'CQ';
 
+  /// Quem prevalece ao conectar: rádio (padrão) ou app. Veja engine/radio_sync.dart.
+  SyncPolicy syncPolicy = SyncPolicy.radioFirst;
+
+  /// Corrige automaticamente o rádio para USB-D ao conectar (e avisa se for alterado depois).
+  bool autoFixMode = true;
+
+  /// Grava o QSO no log sem abrir o diálogo de confirmação.
+  bool autoLog = false;
+
+  /// Buffer de áudio de TX pedido ao rádio (ms): menor = menos atraso, porém mais sensível a jitter.
+  int txBufferMs = 150;
+
+  /// Avanço do envio do áudio de TX (ms) para compensar o atraso do enlace; ajuste fino por DT.
+  int txAdvanceMs = 0;
+
+  /// Modo digital ativo.
+  ModeSpec get mode => modeById(modeId);
+
+  /// Codec FT8/FT4 do modo ativo (FT8 como reserva).
+  FtxProtocol get protocol => mode.ftx ?? FtxProtocol.ft8;
+
   void _read() {
     final p = _p;
     if (p == null) return;
@@ -54,7 +83,12 @@ class Settings extends ChangeNotifier {
     radioUser = p.getString('radioUser') ?? radioUser;
     radioPass = p.getString('radioPass') ?? radioPass;
     radioKind = RadioKind.values[(p.getInt('radioKind') ?? radioKind.index).clamp(0, RadioKind.values.length - 1)];
-    protocol = (p.getInt('protocol') ?? 0) == 1 ? FtxProtocol.ft4 : FtxProtocol.ft8;
+    modeId = p.getString('modeId') ?? modeId;
+    syncPolicy = SyncPolicy.values[(p.getInt('syncPolicy') ?? 0).clamp(0, SyncPolicy.values.length - 1)];
+    autoFixMode = p.getBool('autoFixMode') ?? autoFixMode;
+    autoLog = p.getBool('autoLog') ?? autoLog;
+    txBufferMs = p.getInt('txBufferMs') ?? txBufferMs;
+    txAdvanceMs = p.getInt('txAdvanceMs') ?? txAdvanceMs;
     bandIndex = p.getInt('bandIndex') ?? bandIndex;
     rxFreq = p.getInt('rxFreq') ?? rxFreq;
     txFreq = p.getInt('txFreq') ?? txFreq;
@@ -80,7 +114,12 @@ class Settings extends ChangeNotifier {
     await p.setString('radioUser', radioUser);
     await p.setString('radioPass', radioPass);
     await p.setInt('radioKind', radioKind.index);
-    await p.setInt('protocol', protocol.id);
+    await p.setString('modeId', modeId);
+    await p.setInt('syncPolicy', syncPolicy.index);
+    await p.setBool('autoFixMode', autoFixMode);
+    await p.setBool('autoLog', autoLog);
+    await p.setInt('txBufferMs', txBufferMs);
+    await p.setInt('txAdvanceMs', txAdvanceMs);
     await p.setInt('bandIndex', bandIndex);
     await p.setInt('rxFreq', rxFreq);
     await p.setInt('txFreq', txFreq);

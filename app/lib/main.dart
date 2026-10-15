@@ -1,3 +1,9 @@
+/// Ponto de entrada do JTMobile.
+///
+/// Carrega as configurações, escolhe o codec nativo (ou um codec vazio fora do Android), cria o
+/// [Engine] e abre a interface. Na primeira execução pede indicativo e locator.
+library;
+
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -54,7 +60,7 @@ class FtApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'FT Mobile',
+      title: 'JTMobile',
       debugShowCheckedModeBanner: false,
       theme: buildTheme(),
       home: _Gate(engine: engine),
@@ -86,7 +92,7 @@ class _GateState extends State<_Gate> {
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
-        title: const Text('Bem-vindo ao FT Mobile'),
+        title: const Text('Bem-vindo ao JTMobile'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

@@ -1,7 +1,10 @@
+/// Cabeçalho do app: enlace com o rádio, frequência (toque abre o painel do rádio), seletor de modo,
+/// relógio UTC, barra de slot (RX/TX), medidores (S/PO/SWR/áudio), avisos de sincronização e bandas.
+library;
+
 import 'package:flutter/material.dart';
 
-import '../core/ftx_native.dart';
-import '../core/models.dart';
+import '../core/modes.dart';
 import '../engine/engine.dart';
 import '../radio/civ.dart';
 import '../radio/radio_link.dart';
@@ -16,9 +19,14 @@ String _fmtFreq(int hz) {
 }
 
 class StatusHeader extends StatelessWidget {
-  const StatusHeader({super.key, required this.engine, required this.onSettings});
+  const StatusHeader({super.key, required this.engine, required this.onSettings, required this.onRadio});
   final Engine engine;
+
+  /// Abre as configurações do app.
   final VoidCallback onSettings;
+
+  /// Abre o painel do rádio (toque na frequência).
+  final VoidCallback onRadio;
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +35,7 @@ class StatusHeader extends StatelessWidget {
       builder: (context, _) {
         final r = engine.radio;
         final st = r?.state;
-        final freq = st?.freqHz ?? engine.dialFrequency;
+        final freq = st?.freqHz ?? engine.dialFrequency ?? 0;
         final tx = engine.transmitting || engine.tuning;
         return Container(
           color: Pal.panel,
@@ -51,13 +59,18 @@ class StatusHeader extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text(
-                    _fmtFreq(freq),
-                    style: kMono.copyWith(
-                      fontSize: 30,
-                      fontWeight: FontWeight.w600,
-                      color: tx ? Pal.tx : Pal.text,
-                      letterSpacing: 1,
+                  // Toque na frequência: abre o painel do rádio (sincronização, potência, modo...)
+                  InkWell(
+                    onTap: onRadio,
+                    borderRadius: BorderRadius.circular(8),
+                    child: Text(
+                      _fmtFreq(freq),
+                      style: kMono.copyWith(
+                        fontSize: 30,
+                        fontWeight: FontWeight.w600,
+                        color: tx ? Pal.tx : Pal.text,
+                        letterSpacing: 1,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 6),
@@ -66,18 +79,10 @@ class StatusHeader extends StatelessWidget {
                     child: Text(_modeText(st), style: const TextStyle(color: Pal.dim, fontSize: 12)),
                   ),
                   const Spacer(),
-                  SegmentedButton<FtxProtocol>(
-                    showSelectedIcon: false,
-                    style: const ButtonStyle(visualDensity: VisualDensity.compact),
-                    segments: const [
-                      ButtonSegment(value: FtxProtocol.ft8, label: Text('FT8')),
-                      ButtonSegment(value: FtxProtocol.ft4, label: Text('FT4')),
-                    ],
-                    selected: {engine.protocol},
-                    onSelectionChanged: (s) => engine.setProtocol(s.first),
-                  ),
+                  _ModeButton(engine: engine),
                 ],
               ),
+              _SyncBanner(engine: engine),
               const SizedBox(height: 4),
               _SlotBar(engine: engine),
               const SizedBox(height: 4),
@@ -88,7 +93,7 @@ class StatusHeader extends StatelessWidget {
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   itemCount: kBands.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 6),
+                  separatorBuilder: (_, _) => const SizedBox(width: 6),
                   itemBuilder: (context, i) => ChoiceChip(
                     label: Text(kBands[i].name),
                     selected: engine.settings.bandIndex == i,
@@ -104,12 +109,97 @@ class StatusHeader extends StatelessWidget {
     );
   }
 
-  String _modeText(RadioState? st) {
-    if (st == null || st.mode == null) return 'USB-D';
-    const names = {0: 'LSB', 1: 'USB', 2: 'AM', 3: 'CW', 4: 'RTTY', 5: 'FM', 7: 'CW-R', 8: 'RTTY-R'};
-    final m = names[st.mode] ?? '?';
-    return st.dataMode == true ? '$m-D' : m;
+  String _modeText(RadioState? st) => st == null || st.mode == null ? 'USB-D' : civModeName(st.mode, st.dataMode);
+}
+
+/// Seletor de modo digital (FT8, FT4, JT65...). Modos não implementados aparecem desabilitados.
+class _ModeButton extends StatelessWidget {
+  const _ModeButton({required this.engine});
+  final Engine engine;
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<ModeSpec>(
+      tooltip: 'Modo digital',
+      color: Pal.panel2,
+      onSelected: engine.setMode,
+      itemBuilder: (_) => [
+        for (final m in kModes)
+          PopupMenuItem<ModeSpec>(
+            value: m,
+            enabled: m.implemented,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(m.label, style: TextStyle(fontWeight: FontWeight.w700, color: m.implemented ? Pal.text : Pal.dim)),
+                Text(m.description, style: const TextStyle(fontSize: 11, color: Pal.dim)),
+              ],
+            ),
+          ),
+      ],
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: Pal.rx.withValues(alpha: 0.18),
+          border: Border.all(color: Pal.rx),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(engine.mode.label, style: const TextStyle(fontWeight: FontWeight.w800, color: Pal.rx)),
+            const Icon(Icons.arrow_drop_down, color: Pal.rx, size: 20),
+          ],
+        ),
+      ),
+    );
   }
+}
+
+/// Faixa de avisos de sincronização app↔rádio (modo errado, frequência fora do padrão).
+class _SyncBanner extends StatelessWidget {
+  const _SyncBanner({required this.engine});
+  final Engine engine;
+
+  @override
+  Widget build(BuildContext context) {
+    final r = engine.radio;
+    if (r == null || r.status != LinkStatus.connected) return const SizedBox.shrink();
+    final items = <Widget>[];
+    if (!engine.radioModeOk) {
+      items.add(_warn('Rádio em ${civModeName(r.state.mode, r.state.dataMode)} — use USB-D', 'Corrigir', engine.fixRadioMode));
+    }
+    if (engine.radioOffStandardFrequency) {
+      final d = engine.dialFrequency!;
+      items.add(_warn('Frequência fora do padrão ${engine.mode.label} (${(d / 1e6).toStringAsFixed(3)} MHz)', 'Ir',
+          engine.goToStandardSetup));
+    }
+    if (items.isEmpty) return const SizedBox.shrink();
+    return Padding(padding: const EdgeInsets.only(top: 4), child: Column(children: items));
+  }
+
+  Widget _warn(String text, String action, VoidCallback onTap) => Container(
+        margin: const EdgeInsets.only(bottom: 3),
+        padding: const EdgeInsets.fromLTRB(10, 2, 4, 2),
+        decoration: BoxDecoration(
+          color: Pal.warn.withValues(alpha: 0.14),
+          border: Border.all(color: Pal.warn.withValues(alpha: 0.6)),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.sync_problem, size: 16, color: Pal.warn),
+            const SizedBox(width: 6),
+            Expanded(child: Text(text, style: const TextStyle(fontSize: 11, color: Pal.warn))),
+            TextButton(
+              style: TextButton.styleFrom(visualDensity: VisualDensity.compact, padding: const EdgeInsets.symmetric(horizontal: 8)),
+              onPressed: onTap,
+              child: Text(action),
+            ),
+          ],
+        ),
+      );
 }
 
 class _ConnPill extends StatelessWidget {
@@ -209,9 +299,9 @@ class _SlotBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return ValueListenableBuilder<int>(
       valueListenable: engine.clockTick,
-      builder: (context, _, __) {
+      builder: (context, _, _) {
         final t = engine.now();
-        final slot = engine.protocol.slotSeconds;
+        final slot = engine.mode.slotSeconds;
         final sec = engine.secondsIntoSlot(t);
         final parity = engine.slotIndexAt(t) % 2;
         final tx = engine.transmitting || engine.tuning;
@@ -249,7 +339,7 @@ class _SlotBar extends StatelessWidget {
               child: SizedBox(
                 height: 6,
                 child: CustomPaint(
-                  painter: _SlotPainter(progress: (sec / slot).clamp(0.0, 1.0), color: color, decodeAt: 1 - (engine.protocol == FtxProtocol.ft8 ? 1.0 : 1.1) / slot),
+                  painter: _SlotPainter(progress: (sec / slot).clamp(0.0, 1.0), color: color, decodeAt: engine.mode.decodeAtSeconds / slot),
                   size: Size.infinite,
                 ),
               ),
@@ -290,7 +380,7 @@ class _Meters extends StatelessWidget {
         final tx = engine.transmitting || engine.tuning;
         return ValueListenableBuilder<int>(
           valueListenable: engine.wfTick,
-          builder: (context, _, __) {
+          builder: (context, _, _) {
             // nível de áudio ideal: ~ -30 .. -15 dBFS (ruído de fundo)
             final lvl = ((engine.rxLevelDb + 70) / 70).clamp(0.0, 1.0);
             final lvlColor = engine.rxLevelDb > -12 ? Pal.tx : (engine.rxLevelDb < -50 ? Pal.warn : Pal.rx);

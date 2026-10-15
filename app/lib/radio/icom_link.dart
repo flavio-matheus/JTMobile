@@ -16,7 +16,10 @@ import 'radio_link.dart';
 const int _portControl = 50001;
 const int _portSerial = 50002;
 const int _portAudio = 50003;
-const int _txBufferMs = 300;
+/// Valor padrão do buffer de recepção de áudio do rádio (ms), informado ao rádio no pedido de fluxos.
+/// O rádio o usa como buffer de *jitter* do áudio de TX: menor = menos atraso, porém mais sensível
+/// a pacotes tardios (o kappanhang observa que acima de ~500 ms a TX deixa de funcionar).
+const int kDefaultTxBufferMs = 150;
 
 int _be32(Uint8List b, int o) => (b[o] << 24) | (b[o + 1] << 16) | (b[o + 2] << 8) | b[o + 3];
 int _le16(Uint8List b, int o) => b[o] | (b[o + 1] << 8);
@@ -374,7 +377,15 @@ bool debugIcom = false;
 
 /// Enlace com o IC-705 via Wi-Fi (protocolo de rede da Icom).
 class IcomNetworkRadio implements RadioLink {
-  IcomNetworkRadio({required this.ip, required this.username, required this.password});
+  IcomNetworkRadio({
+    required this.ip,
+    required this.username,
+    required this.password,
+    this.txBufferMs = kDefaultTxBufferMs,
+  });
+
+  /// Buffer de áudio de TX solicitado ao rádio (ms). Veja [kDefaultTxBufferMs].
+  final int txBufferMs;
 
   final String ip;
   final String username;
@@ -472,9 +483,7 @@ class IcomNetworkRadio implements RadioLink {
       _set(LinkStatus.connected, 'Conectado (IC-705 Wi-Fi)');
 
       // Estado inicial e polling
-      sendCiv(Civ.readFreq());
-      sendCiv(Civ.readMode());
-      sendCiv(Civ.readDataMode());
+      requestState();
       _poll = Timer.periodic(const Duration(milliseconds: 250), (_) => _pollTickFn());
     } catch (e) {
       final msg = e is IcomException ? e.message : 'Erro: $e';
@@ -548,7 +557,7 @@ class IcomNetworkRadio implements RadioLink {
     d.setRange(120, 124, [0x00, 0x00, rate >> 8, rate & 0xFF]);
     d.setRange(124, 128, [0x00, 0x00, _portSerial >> 8, _portSerial & 0xFF]);
     d.setRange(128, 134, [0x00, 0x00, _portAudio >> 8, _portAudio & 0xFF, 0x00, 0x00]);
-    d.setRange(134, 144, [_txBufferMs >> 8, _txBufferMs & 0xFF, 0x01, 0, 0, 0, 0, 0, 0, 0]);
+    d.setRange(134, 144, [txBufferMs >> 8, txBufferMs & 0xFF, 0x01, 0, 0, 0, 0, 0, 0, 0]);
     c.sendTracked(d);
     _authInner++;
   }
@@ -715,6 +724,12 @@ class IcomNetworkRadio implements RadioLink {
     }
   }
 
+  /// Polling a cada 250 ms (o rádio também envia notificações espontâneas de frequência/modo quando
+  /// o "CI-V Transceive" está ligado, o que torna a sincronização quase instantânea).
+  ///
+  /// Rodízio: medidores a cada tick; frequência a cada 1 s; modo/DATA a cada 2 s; potência,
+  /// pré-amplificador e atenuador a cada 4 s. Assim qualquer ajuste feito no painel do rádio chega
+  /// ao app em, no máximo, 1–4 s mesmo sem transceive.
   void _pollTickFn() {
     if (_status != LinkStatus.connected) return;
     _pollTick++;
@@ -723,11 +738,66 @@ class IcomNetworkRadio implements RadioLink {
     } else {
       sendCiv(Civ.readSMeter());
     }
-    if (_pollTick % 8 == 0) sendCiv(Civ.readFreq());
-    if (_pollTick % 40 == 4) {
+    if (_pollTick % 4 == 0) sendCiv(Civ.readFreq());
+    if (_pollTick % 8 == 2) {
       sendCiv(Civ.readMode());
       sendCiv(Civ.readDataMode());
     }
+    if (_pollTick % 16 == 6) {
+      sendCiv(Civ.readRfPower());
+      sendCiv(Civ.readPreamp());
+      sendCiv(Civ.readAtt());
+    }
+  }
+
+  @override
+  void requestState() {
+    sendCiv(Civ.readFreq());
+    sendCiv(Civ.readMode());
+    sendCiv(Civ.readDataMode());
+    sendCiv(Civ.readRfPower());
+    sendCiv(Civ.readPreamp());
+    sendCiv(Civ.readAtt());
+  }
+
+  void _notify() {
+    if (!_changeCtl.isClosed) _changeCtl.add(null);
+  }
+
+  @override
+  void setMode(int mode, {int filter = 1}) {
+    sendCiv(Civ.setMode(mode, filter: filter));
+    state.mode = mode;
+    state.filter = filter;
+    _notify();
+  }
+
+  @override
+  void setDataMode(bool on, {int filter = 1}) {
+    sendCiv(Civ.setDataMode(on, filter: filter));
+    state.dataMode = on;
+    _notify();
+  }
+
+  @override
+  void setRfPower(int raw) {
+    sendCiv(Civ.setRfPower(raw));
+    state.rfPower = raw;
+    _notify();
+  }
+
+  @override
+  void setPreamp(int value) {
+    sendCiv(Civ.setPreamp(value));
+    state.preamp = value;
+    _notify();
+  }
+
+  @override
+  void setAtt(int db) {
+    sendCiv(Civ.setAtt(db));
+    state.att = db;
+    _notify();
   }
 
   @override

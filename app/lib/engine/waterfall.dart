@@ -1,3 +1,9 @@
+/// Dados e renderização da waterfall: buffer circular de linhas de espectro (FFT de 4096 pontos a
+/// 12 kHz, ≈2,93 Hz/bin, 0–3200 Hz), controle automático de ganho e conversão para `ui.Image`
+/// com paleta no estilo WSJT-X/JTDX. A interface (`ui/waterfall_view.dart`) desenha a imagem com
+/// zoom/rolagem e sobrepõe marcadores e etiquetas.
+library;
+
 import 'dart:async';
 import 'dart:typed_data';
 import 'dart:ui' as ui;

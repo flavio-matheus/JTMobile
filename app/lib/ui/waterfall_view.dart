@@ -1,3 +1,7 @@
+/// Waterfall interativa (zoom por pinça, modo "Dial TX" que define a frequência de transmissão ao
+/// deslizar o espectro sob a mira central, modo "Explorar", etiquetas de indicativos, marcadores Rx/Tx).
+library;
+
 import 'dart:math';
 import 'dart:ui' as ui;
 
@@ -301,7 +305,7 @@ class _WfPainter extends CustomPainter {
   void _paintSlotLines(Canvas canvas, Rect body, double w) {
     final wf = engine.waterfall;
     if (wf.count < 2) return;
-    final slotMs = (engine.protocol.slotSeconds * 1000).round();
+    final slotMs = (engine.mode.slotSeconds * 1000).round();
     final rowH = body.height / kWfRows;
     final p = Paint()
       ..color = const Color(0x66FFFFFF)
@@ -328,7 +332,7 @@ class _WfPainter extends CustomPainter {
 
   void _paintMarkers(Canvas canvas, Rect body, double w) {
     final s = engine.settings;
-    final bw = engine.protocol.bandwidth;
+    final bw = engine.mode.bandwidthHz;
     void marker(double hz, Color c, String label, {bool above = true}) {
       final x0 = _x(hz, w), x1 = _x(hz + bw, w);
       canvas.drawRect(

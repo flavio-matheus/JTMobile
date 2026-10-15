@@ -1,3 +1,8 @@
+/// Lista de atividade da banda (equivalente à janela "Band Activity" do JTDX), pensada para celular:
+/// agrupada por slot, com filtros, destaques (CQ, para mim, já trabalhado, novo país) e informações
+/// do operador (país, distância, azimute).
+library;
+
 import 'package:flutter/material.dart';
 
 import '../core/dxcc.dart';
@@ -70,7 +75,7 @@ class _ActivityListState extends State<ActivityList> {
               child: items.isEmpty
                   ? Center(
                       child: Text(
-                        e.monitoring ? 'Aguardando decodificações…\n(o primeiro ciclo completo leva até ${e.protocol.slotSeconds.toStringAsFixed(0)} s)' : 'Conecte o rádio para começar.',
+                        e.monitoring ? 'Aguardando decodificações…\n(o primeiro ciclo completo leva até ${e.mode.slotSeconds.toStringAsFixed(0)} s)' : 'Conecte o rádio para começar.',
                         textAlign: TextAlign.center,
                         style: const TextStyle(color: Pal.dim),
                       ),

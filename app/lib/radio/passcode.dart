@@ -1,3 +1,7 @@
+/// Codificação de usuário/senha do protocolo de rede Icom (RS-BA1 / RS-MS1A).
+/// Tabela e algoritmo conforme o projeto kappanhang (MIT) — https://github.com/nonoo/kappanhang
+library;
+
 // Codificação de usuário/senha do protocolo de rede Icom (RS-BA1 / RS-MS1A).
 // Tabela e algoritmo conforme o projeto kappanhang (MIT) - https://github.com/nonoo/kappanhang
 

@@ -1,3 +1,7 @@
+/// Tema escuro e paleta semântica da interface (verde = RX/CQ, vermelho = TX/chamada para mim,
+/// âmbar = aviso). Escolhido para operação noturna e boa leitura em tela pequena.
+library;
+
 import 'package:flutter/material.dart';
 
 /// Cores semânticas usadas em toda a interface (tema escuro, adequado para operação à noite).

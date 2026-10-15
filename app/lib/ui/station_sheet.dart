@@ -1,3 +1,7 @@
+/// Ficha da estação (folha inferior) ao tocar numa decodificação: indicativo, país, locator,
+/// distância/azimute, SNR, DT, frequência, histórico da sessão e ações (responder, Rx aqui).
+library;
+
 import 'package:flutter/material.dart';
 
 import '../core/dxcc.dart';
